@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-dockerfile",
       "title": "Dockerfile for containerized deployment",
@@ -14,10 +15,11 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T11:48:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T11:52:00Z"
+      "completed_at": "2026-06-04T11:52:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T11:57:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -87,6 +89,7 @@
     {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-stealth-mode: correct Chrome flags, default enabled, opt-out pattern, 4 contract tests. Approved.", "at": "2026-06-04T11:40:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed Dockerfile — node:22-slim + apt chromium, pre-built dist, CHROME_PATH env, exposes port 3000. Single stage, production-ready.", "at": "2026-06-04T11:43:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Created Dockerfile (node:22-slim + chromium + font libs, CHROME_PATH, port 3000) and .dockerignore. Ready for docker build after npm run build.", "at": "2026-06-04T11:52:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Created Dockerfile (node:22-slim + chromium + font libs, CHROME_PATH, port 3000) and .dockerignore. Ready for docker build after npm run build.", "at": "2026-06-04T11:52:00Z"},
+    {"persona": "tester", "action": "test", "description": "10 tests for dockerfile: file exists, correct base image, chromium installed, CHROME_PATH set, port exposed, entrypoint correct, dockerignore exists/excludes, dist prereqs exist. 33 total.", "at": "2026-06-04T11:57:00Z"}
   ]
 }
