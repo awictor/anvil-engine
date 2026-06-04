@@ -88,6 +88,9 @@ const server = createServer(async (req, res) => {
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
       const pages = await browser.pages();
       const page = pages[0] || await browser.newPage();
+      if (session.browserProcess.proxyCredentials) {
+        await page.authenticate(session.browserProcess.proxyCredentials);
+      }
       await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2" });
       const title = await page.title();
       const currentUrl = page.url();
@@ -107,6 +110,9 @@ const server = createServer(async (req, res) => {
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
       const pages = await browser.pages();
       const page = pages[0] || await browser.newPage();
+      if (session.browserProcess.proxyCredentials) {
+        await page.authenticate(session.browserProcess.proxyCredentials);
+      }
 
       await page.goto(body.url, { waitUntil: "networkidle2" });
 
@@ -140,6 +146,9 @@ const server = createServer(async (req, res) => {
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
       const pages = await browser.pages();
       const page = pages[0] || await browser.newPage();
+      if (session.browserProcess.proxyCredentials) {
+        await page.authenticate(session.browserProcess.proxyCredentials);
+      }
 
       if (body.url) {
         await page.goto(body.url, { waitUntil: "networkidle2" });

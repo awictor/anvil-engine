@@ -3,17 +3,20 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-proxy-support",
       "title": "Proxy configuration per session",
-      "spec": "Enhance proxy support with authentication and per-session configuration.\n\nFiles to modify:\n- src/api.ts — document proxy in session creation response\n- src/launcher.ts — support authenticated proxies (user:pass@host:port)\n\nCurrent state: launcher.ts already accepts options.proxy and adds --proxy-server flag.\nBut it doesn't handle authenticated proxies (user:pass@host:port).\n\nEnhancement:\n  In launcher.ts, if proxy contains @ (authenticated):\n    - Extract host:port for --proxy-server flag\n    - Store credentials for later use with page.authenticate()\n  \n  Add to BrowserProcess interface:\n    proxyCredentials?: { username: string; password: string };\n\n  In api.ts POST /v1/sessions response, include:\n    proxy: options.proxyUrl || null\n\n  In action endpoints (navigate, scrape), if session has proxyCredentials:\n    await page.authenticate({ username, password }) before navigation\n\nDo NOT add new dependencies.\nKeep changes minimal — parse URL, store creds, authenticate on navigate.",
       "by": "architect",
-      "at": "2026-06-04T12:22:00Z"
+      "at": "2026-06-04T12:22:00Z",
+      "claimed_by": "builder",
+      "claimed_at": "2026-06-04T12:25:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T12:32:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {
@@ -115,6 +118,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented BrowserPool in pool.ts (init/acquire/release/shutdown), integrated into SessionManager via constructor, ANVIL_POOL_SIZE env in api.ts, pool init before listen, shutdown on exit.", "at": "2026-06-04T12:12:00Z"},
     {"persona": "tester", "action": "test", "description": "8 tests for pool: instantiation with default/custom size, starts empty, exports methods, SessionManager accepts pool, backward compat, env integration (0=disabled, >0=creates). 41 total.", "at": "2026-06-04T12:16:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-connection-pool: correct acquire/release pattern, Promise.allSettled for resilient init, backward-compatible SessionManager, env opt-in, 8 tests. Approved.", "at": "2026-06-04T12:18:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"}
   ]
 }

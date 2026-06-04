@@ -12,11 +12,17 @@ export interface LaunchOptions {
   args?: string[];
 }
 
+export interface ProxyCredentials {
+  username: string;
+  password: string;
+}
+
 export interface BrowserProcess {
   pid: number;
   process: ChildProcess;
   cdpPort: number;
   wsEndpoint: string;
+  proxyCredentials?: ProxyCredentials;
 }
 
 const CHROME_PATHS: Record<string, string[]> = {
@@ -93,8 +99,26 @@ export async function launchBrowser(options: LaunchOptions = {}): Promise<Browse
     args.push("--incognito");
   }
 
+  let proxyCredentials: ProxyCredentials | undefined;
   if (options.proxy) {
-    args.push(`--proxy-server=${options.proxy}`);
+    try {
+      const proxyUrl = new URL(options.proxy);
+      if (proxyUrl.username && proxyUrl.password) {
+        proxyCredentials = {
+          username: decodeURIComponent(proxyUrl.username),
+          password: decodeURIComponent(proxyUrl.password),
+        };
+        // Strip credentials from the URL for --proxy-server flag
+        proxyUrl.username = "";
+        proxyUrl.password = "";
+        args.push(`--proxy-server=${proxyUrl.host}`);
+      } else {
+        args.push(`--proxy-server=${options.proxy}`);
+      }
+    } catch {
+      // Not a valid URL — pass as-is (e.g., "host:port")
+      args.push(`--proxy-server=${options.proxy}`);
+    }
   }
 
   if (options.args) {
@@ -116,6 +140,7 @@ export async function launchBrowser(options: LaunchOptions = {}): Promise<Browse
     process: proc,
     cdpPort,
     wsEndpoint,
+    proxyCredentials,
   };
 }
 
