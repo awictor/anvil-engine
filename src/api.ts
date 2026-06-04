@@ -126,6 +126,33 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // POST /v1/pdf — generate PDF
+    if (method === "POST" && url.pathname === "/v1/pdf") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+
+      if (body.url) {
+        await page.goto(body.url, { waitUntil: "networkidle2" });
+      }
+
+      const pdf = await page.pdf({
+        format: body.format || "A4",
+        landscape: body.landscape || false,
+        printBackground: true,
+      });
+      browser.disconnect();
+
+      res.writeHead(200, { "Content-Type": "application/pdf" });
+      res.end(pdf);
+      return;
+    }
+
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");

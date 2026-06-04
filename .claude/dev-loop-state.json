@@ -3,17 +3,20 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-pdf-endpoint",
       "title": "PDF generation endpoint",
-      "spec": "Add POST /v1/pdf that generates a PDF of the current or specified page.\n\nFiles to modify:\n- src/api.ts — add /v1/pdf route\n\nEndpoint: POST /v1/pdf\n  Body: { url?: string, format?: 'A4' | 'Letter', landscape?: boolean }\n  Response: binary PDF (Content-Type: application/pdf)\n\nImplementation:\n  - Require active session (400 if none)\n  - Connect via puppeteer-core\n  - If url provided, navigate first\n  - page.pdf({ format: body.format || 'A4', landscape: body.landscape || false, printBackground: true })\n  - Return raw PDF buffer with Content-Type: application/pdf\n  - Disconnect\n\nPattern: follow existing /v1/screenshot structure (returns binary).\nDo NOT add new dependencies.",
       "by": "architect",
-      "at": "2026-06-04T10:55:00Z"
+      "at": "2026-06-04T10:55:00Z",
+      "claimed_by": "builder",
+      "claimed_at": "2026-06-04T10:58:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T11:01:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {
@@ -35,6 +38,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/scrape: navigate to URL, optional waitForSelector, extract as html or text, return {content, title, url}", "at": "2026-06-04T10:12:00Z"},
     {"persona": "tester", "action": "test", "description": "10 tests: API contract for scrape (url/format/selector/response shape), sessions create/release shapes, health shape, SessionManager import+size, launcher exports+port increment", "at": "2026-06-04T10:47:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-scrape-endpoint: correct format handling, safe selector passthrough, follows existing patterns, 10 contract tests. Approved.", "at": "2026-06-04T10:50:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed POST /v1/pdf — generate PDF with optional URL navigation, A4/Letter format, landscape mode. Returns binary PDF.", "at": "2026-06-04T10:55:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed POST /v1/pdf — generate PDF with optional URL navigation, A4/Letter format, landscape mode. Returns binary PDF.", "at": "2026-06-04T10:55:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/pdf: optional URL navigation, configurable format (A4/Letter), landscape mode, printBackground, returns binary PDF. 9 endpoints total.", "at": "2026-06-04T11:01:00Z"}
   ]
 }
