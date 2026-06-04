@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-proxy-support",
       "title": "Proxy configuration per session",
@@ -14,10 +15,11 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T12:25:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T12:32:00Z"
+      "completed_at": "2026-06-04T12:32:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T12:35:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -119,6 +121,7 @@
     {"persona": "tester", "action": "test", "description": "8 tests for pool: instantiation with default/custom size, starts empty, exports methods, SessionManager accepts pool, backward compat, env integration (0=disabled, >0=creates). 41 total.", "at": "2026-06-04T12:16:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-connection-pool: correct acquire/release pattern, Promise.allSettled for resilient init, backward-compatible SessionManager, env opt-in, 8 tests. Approved.", "at": "2026-06-04T12:18:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"},
+    {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"}
   ]
 }

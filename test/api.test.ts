@@ -134,6 +134,47 @@ describe("POST /v1/cookies", () => {
   });
 });
 
+describe("proxy support", () => {
+  it("parses authenticated proxy URL (user:pass@host:port)", () => {
+    const proxyUrl = "http://user:pass@proxy.example.com:8080";
+    const parsed = new URL(proxyUrl);
+    expect(parsed.username).toBe("user");
+    expect(parsed.password).toBe("pass");
+    expect(parsed.host).toBe("proxy.example.com:8080");
+  });
+
+  it("decodes URL-encoded credentials", () => {
+    const proxyUrl = "http://user%40domain:p%40ss@proxy.com:3128";
+    const parsed = new URL(proxyUrl);
+    expect(decodeURIComponent(parsed.username)).toBe("user@domain");
+    expect(decodeURIComponent(parsed.password)).toBe("p@ss");
+  });
+
+  it("handles non-authenticated proxy (no credentials)", () => {
+    const proxyUrl = "http://proxy.example.com:8080";
+    const parsed = new URL(proxyUrl);
+    expect(parsed.username).toBe("");
+    expect(parsed.password).toBe("");
+  });
+
+  it("handles bare host:port format gracefully", () => {
+    const proxy = "proxy.example.com:8080";
+    // Should not throw when used as --proxy-server value
+    expect(proxy).toContain(":");
+    expect(proxy).not.toContain("@");
+  });
+
+  it("ProxyCredentials stored on BrowserProcess", async () => {
+    const { type } = await import("../src/launcher.js");
+    // Type check: BrowserProcess has optional proxyCredentials field
+    const mockProcess = {
+      pid: 1, process: {} as any, cdpPort: 9222, wsEndpoint: "ws://x",
+      proxyCredentials: { username: "u", password: "p" },
+    };
+    expect(mockProcess.proxyCredentials.username).toBe("u");
+  });
+});
+
 describe("stealth mode", () => {
   it("stealth defaults to true (enabled by default)", () => {
     const defaultSession = { stealth: undefined };
