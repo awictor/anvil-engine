@@ -121,33 +121,22 @@ const server = createServer(async (req, res) => {
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      if (session.browserProcess.proxyCredentials) {
-        await page.authenticate(session.browserProcess.proxyCredentials);
-      }
+      const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        if (session.browserProcess.proxyCredentials) {
+          await page.authenticate(session.browserProcess.proxyCredentials);
+        }
+        await page.goto(body.url, { waitUntil: "networkidle2" });
+        if (body.waitForSelector) {
+          await page.waitForSelector(body.waitForSelector, { timeout: 10000 });
+        }
+        const format = body.format || "text";
+        const content = format === "html"
+          ? await page.content()
+          : await page.evaluate(() => document.body.innerText);
+        return { content, title: await page.title(), url: page.url() };
+      });
 
-      await page.goto(body.url, { waitUntil: "networkidle2" });
-
-      if (body.waitForSelector) {
-        await page.waitForSelector(body.waitForSelector, { timeout: 10000 });
-      }
-
-      const title = await page.title();
-      const currentUrl = page.url();
-      let content: string;
-
-      const format = body.format || "text";
-      if (format === "html") {
-        content = await page.content();
-      } else {
-        content = await page.evaluate(() => document.body.innerText);
-      }
-
-      browser.disconnect();
-      json(res, 200, { content, title, url: currentUrl });
+      json(res, 200, result);
       return;
     }
 
