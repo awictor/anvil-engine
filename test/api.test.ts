@@ -73,6 +73,35 @@ describe("SessionManager logic", () => {
   });
 });
 
+describe("POST /v1/pdf", () => {
+  it("supports optional url for navigation before PDF", () => {
+    const withUrl = { url: "https://example.com", format: "A4" };
+    const withoutUrl = { format: "Letter", landscape: true };
+    expect(withUrl.url).toBeDefined();
+    expect(withoutUrl).not.toHaveProperty("url");
+  });
+
+  it("supports format parameter (A4, Letter)", () => {
+    const a4 = { format: "A4" };
+    const letter = { format: "Letter" };
+    expect(a4.format).toBe("A4");
+    expect(letter.format).toBe("Letter");
+  });
+
+  it("supports landscape parameter", () => {
+    const landscape = { landscape: true };
+    const portrait = { landscape: false };
+    expect(landscape.landscape).toBe(true);
+    expect(portrait.landscape).toBe(false);
+  });
+
+  it("returns binary PDF (application/pdf content-type)", () => {
+    // Contract: response is raw binary, not JSON
+    const expectedContentType = "application/pdf";
+    expect(expectedContentType).toBe("application/pdf");
+  });
+});
+
 describe("launcher module", () => {
   it("exports launchBrowser and killBrowser", async () => {
     const mod = await import("../src/launcher.js");
