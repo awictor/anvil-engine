@@ -204,6 +204,37 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // POST /v1/intercept — enable/disable request interception
+    if (method === "POST" && url.pathname === "/v1/intercept") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+
+      if (body.enabled) {
+        const blockPatterns: string[] = body.blockPatterns || [];
+        await page.setRequestInterception(true);
+        page.on("request", (req) => {
+          if (blockPatterns.some((p) => req.url().includes(p))) {
+            req.abort().catch(() => {});
+          } else {
+            req.continue().catch(() => {});
+          }
+        });
+        browser.disconnect();
+        json(res, 200, { enabled: true, blocking: blockPatterns.length });
+      } else {
+        await page.setRequestInterception(false);
+        browser.disconnect();
+        json(res, 200, { enabled: false, blocking: 0 });
+      }
+      return;
+    }
+
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");
