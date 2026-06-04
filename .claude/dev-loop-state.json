@@ -6,20 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-stealth-mode",
-      "title": "Stealth mode with WebDriver detection evasion",
-      "by": "architect",
-      "at": "2026-06-04T11:28:00Z",
-      "claimed_by": "builder",
-      "claimed_at": "2026-06-04T11:30:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:34:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:38:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -56,6 +43,18 @@
       "tested_at": "2026-06-04T11:24:00Z",
       "reviewed_by": "reviewer",
       "reviewed_at": "2026-06-04T11:25:00Z"
+    },
+    {
+      "id": "feat-stealth-mode",
+      "title": "Stealth mode with WebDriver detection evasion",
+      "by": "architect",
+      "at": "2026-06-04T11:28:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T11:34:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T11:38:00Z",
+      "reviewed_by": "reviewer",
+      "reviewed_at": "2026-06-04T11:40:00Z"
     }
   ],
   "log": [
@@ -74,6 +73,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-cookie-persistence: correct page.cookies/setCookie usage, array validation, no disk persistence, 5 contract tests. Approved.", "at": "2026-06-04T11:25:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"},
-    {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"}
+    {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-stealth-mode: correct Chrome flags, default enabled, opt-out pattern, 4 contract tests. Approved.", "at": "2026-06-04T11:40:00Z"}
   ]
 }
