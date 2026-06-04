@@ -1,0 +1,25 @@
+{
+  "name": "anvil-engine",
+  "version": "0.1.0",
+  "description": "Independent browser-as-a-service engine — zero third-party browser infra dependencies",
+  "type": "module",
+  "main": "dist/api.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/api.ts",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "fastify": "^5.2.1",
+    "puppeteer-core": "^24.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.0"
+  }
+}
