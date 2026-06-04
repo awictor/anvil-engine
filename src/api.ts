@@ -93,6 +93,39 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // POST /v1/scrape — navigate and extract content
+    if (method === "POST" && url.pathname === "/v1/scrape") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+
+      await page.goto(body.url, { waitUntil: "networkidle2" });
+
+      if (body.waitForSelector) {
+        await page.waitForSelector(body.waitForSelector, { timeout: 10000 });
+      }
+
+      const title = await page.title();
+      const currentUrl = page.url();
+      let content: string;
+
+      const format = body.format || "text";
+      if (format === "html") {
+        content = await page.content();
+      } else {
+        content = await page.evaluate(() => document.body.innerText);
+      }
+
+      browser.disconnect();
+      json(res, 200, { content, title, url: currentUrl });
+      return;
+    }
+
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");
