@@ -6,20 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-proxy-support",
-      "title": "Proxy configuration per session",
-      "by": "architect",
-      "at": "2026-06-04T12:22:00Z",
-      "claimed_by": "builder",
-      "claimed_at": "2026-06-04T12:25:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T12:32:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T12:35:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -92,6 +79,18 @@
       "tested_at": "2026-06-04T12:16:00Z",
       "reviewed_by": "reviewer",
       "reviewed_at": "2026-06-04T12:18:00Z"
+    },
+    {
+      "id": "feat-proxy-support",
+      "title": "Proxy configuration per session",
+      "by": "architect",
+      "at": "2026-06-04T12:22:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T12:32:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T12:35:00Z",
+      "reviewed_by": "reviewer",
+      "reviewed_at": "2026-06-04T12:37:00Z"
     }
   ],
   "log": [
@@ -122,6 +121,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-connection-pool: correct acquire/release pattern, Promise.allSettled for resilient init, backward-compatible SessionManager, env opt-in, 8 tests. Approved.", "at": "2026-06-04T12:18:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"}
+    {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-proxy-support: correct URL parsing, creds stripped from flag, page.authenticate on all nav endpoints, no credential leakage, 5 tests. Approved.", "at": "2026-06-04T12:37:00Z"}
   ]
 }
