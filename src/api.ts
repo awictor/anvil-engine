@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { SessionManager } from "./session.js";
 import { createCdpProxy } from "./cdp-proxy.js";
 import { BrowserPool } from "./pool.js";
+import { withBrowser } from "./browser-helper.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
 const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
@@ -17,21 +18,6 @@ interface HarEntry {
   timestamp: string;
 }
 const harStore = new Map<string, HarEntry[]>();
-
-async function withBrowser<T>(
-  wsEndpoint: string,
-  fn: (page: import("puppeteer-core").Page, browser: import("puppeteer-core").Browser) => Promise<T>,
-): Promise<T> {
-  const puppeteer = await import("puppeteer-core");
-  const browser = await puppeteer.default.connect({ browserWSEndpoint: wsEndpoint });
-  try {
-    const pages = await browser.pages();
-    const page = pages[0] || await browser.newPage();
-    return await fn(page, browser);
-  } finally {
-    browser.disconnect();
-  }
-}
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
