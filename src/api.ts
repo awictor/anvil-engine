@@ -91,6 +91,10 @@ const server = createServer(async (req, res) => {
     // POST /v1/actions/navigate
     if (method === "POST" && url.pathname === "/v1/actions/navigate") {
       const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.url || typeof body.url !== "string") {
+        json(res, 400, { error: "body.url must be a non-empty string" });
+        return;
+      }
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
@@ -304,6 +308,10 @@ const server = createServer(async (req, res) => {
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.script || typeof body.script !== "string") {
+        json(res, 400, { error: "body.script must be a non-empty string" });
+        return;
+      }
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
