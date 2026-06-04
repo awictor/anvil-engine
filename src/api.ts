@@ -18,6 +18,21 @@ interface HarEntry {
 }
 const harStore = new Map<string, HarEntry[]>();
 
+async function withBrowser<T>(
+  wsEndpoint: string,
+  fn: (page: import("puppeteer-core").Page, browser: import("puppeteer-core").Browser) => Promise<T>,
+): Promise<T> {
+  const puppeteer = await import("puppeteer-core");
+  const browser = await puppeteer.default.connect({ browserWSEndpoint: wsEndpoint });
+  try {
+    const pages = await browser.pages();
+    const page = pages[0] || await browser.newPage();
+    return await fn(page, browser);
+  } finally {
+    browser.disconnect();
+  }
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
   const method = req.method || "GET";
@@ -98,19 +113,15 @@ const server = createServer(async (req, res) => {
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      if (session.browserProcess.proxyCredentials) {
-        await page.authenticate(session.browserProcess.proxyCredentials);
-      }
-      await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2" });
-      const title = await page.title();
-      const currentUrl = page.url();
-      browser.disconnect();
+      const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        if (session.browserProcess.proxyCredentials) {
+          await page.authenticate(session.browserProcess.proxyCredentials);
+        }
+        await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2" });
+        return { url: page.url(), title: await page.title() };
+      });
 
-      json(res, 200, { url: currentUrl, title });
+      json(res, 200, result);
       return;
     }
 
