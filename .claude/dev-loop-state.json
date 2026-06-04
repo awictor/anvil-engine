@@ -3,17 +3,20 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-cookie-persistence",
       "title": "Cookie persistence across sessions",
-      "spec": "Add endpoints to save/restore cookies so auth survives session restarts.\n\nFiles to modify:\n- src/api.ts — add GET /v1/cookies and POST /v1/cookies routes\n\nEndpoints:\n\n1. GET /v1/cookies\n   Response: { cookies: Array<{name, value, domain, path, expires, httpOnly, secure}> }\n   Implementation: connect to active session, page.cookies(), return array\n\n2. POST /v1/cookies\n   Body: { cookies: Array<{name, value, domain, path?, expires?, httpOnly?, secure?}> }\n   Response: { injected: number }\n   Implementation: connect to active session, page.setCookie(...body.cookies), return count\n\nBoth require active session (400 if none).\nFollow existing puppeteer-core connect pattern.\nDo NOT add new dependencies.\nDo NOT persist to disk (that's the MCP layer's job via save_cookies/load_cookies).",
       "by": "architect",
-      "at": "2026-06-04T11:12:00Z"
+      "at": "2026-06-04T11:12:00Z",
+      "claimed_by": "builder",
+      "claimed_at": "2026-06-04T11:18:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T11:22:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {
@@ -51,6 +54,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/pdf: optional URL navigation, configurable format (A4/Letter), landscape mode, printBackground, returns binary PDF. 9 endpoints total.", "at": "2026-06-04T11:01:00Z"},
     {"persona": "tester", "action": "test", "description": "4 tests for pdf endpoint: optional url, format A4/Letter, landscape param, binary content-type contract. 14 total tests.", "at": "2026-06-04T11:06:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-pdf-endpoint: correct binary response, headless-only noted, format/landscape params, 4 contract tests. Approved.", "at": "2026-06-04T11:08:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed cookie persistence — GET /v1/cookies (extract all) and POST /v1/cookies (inject array). Engine-level API, no disk persistence (MCP layer handles that).", "at": "2026-06-04T11:12:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed cookie persistence — GET /v1/cookies (extract all) and POST /v1/cookies (inject array). Engine-level API, no disk persistence (MCP layer handles that).", "at": "2026-06-04T11:12:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/cookies (page.cookies()) and POST /v1/cookies (page.setCookie with array validation). 11 endpoints total.", "at": "2026-06-04T11:22:00Z"}
   ]
 }

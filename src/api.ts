@@ -153,6 +153,44 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // GET /v1/cookies — extract all cookies from active session
+    if (method === "GET" && url.pathname === "/v1/cookies") {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+      const cookies = await page.cookies();
+      browser.disconnect();
+
+      json(res, 200, { cookies });
+      return;
+    }
+
+    // POST /v1/cookies — inject cookies into active session
+    if (method === "POST" && url.pathname === "/v1/cookies") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      if (!Array.isArray(body.cookies)) {
+        json(res, 400, { error: "body.cookies must be an array" });
+        return;
+      }
+
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+      await page.setCookie(...body.cookies);
+      browser.disconnect();
+
+      json(res, 200, { injected: body.cookies.length });
+      return;
+    }
+
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");
