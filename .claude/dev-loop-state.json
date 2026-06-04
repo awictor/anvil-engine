@@ -3,7 +3,48 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-file-download",
+      "title": "File download handling with download directory and retrieval endpoint",
+      "by": "architect",
+      "at": "2026-06-03T17:00:00Z",
+      "spec": {
+        "summary": "Enable file downloads triggered by page interactions. Chromium downloads to a temp dir per session, exposed via GET /v1/downloads (list) and GET /v1/downloads/:filename (retrieve binary).",
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/v1/downloads",
+            "description": "List files in the session's download directory",
+            "response": "{ files: [{ name, size, createdAt }] }"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/downloads/:filename",
+            "description": "Retrieve a downloaded file as binary",
+            "response": "Binary file with Content-Disposition header"
+          }
+        ],
+        "implementation_notes": [
+          "Create a temp download dir per session (os.tmpdir() + session.id)",
+          "Set Chrome --download-default-directory flag in launcher.ts",
+          "Store downloadDir on BrowserProcess interface",
+          "Use CDP Page.setDownloadBehavior with allowAndName policy",
+          "List endpoint reads fs.readdir, stat for size/time",
+          "Retrieve endpoint streams the file with correct Content-Type (mime-types lookup)",
+          "Cleanup: rm -rf download dir on session destroy"
+        ],
+        "files_to_modify": ["src/launcher.ts", "src/api.ts"],
+        "acceptance_criteria": [
+          "Session creation sets up a unique download dir",
+          "Chrome is configured to save downloads there automatically",
+          "GET /v1/downloads returns file list with metadata",
+          "GET /v1/downloads/:filename returns binary with correct headers",
+          "Download dir is cleaned up on session destroy"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -154,6 +195,7 @@
     {"persona": "architect", "action": "spec", "description": "Designed HAR capture — POST /v1/har/start, POST /v1/har/stop, GET /v1/har. Simplified HAR entries (url, method, status, duration, size, timestamp). page.on('response') based.", "at": "2026-06-04T12:59:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: harStore Map per session, page.on('response') with timing+buffer size, 3 endpoints (start/stop/get). 15 endpoints total.", "at": "2026-06-04T13:08:00Z"},
     {"persona": "tester", "action": "test", "description": "5 tests for HAR: start confirms recording, stop returns count, GET returns entries with all fields, correct types, empty when not started. 56 total.", "at": "2026-06-04T13:13:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-har-capture: correct response listener, defensive buffer read, per-session storage, 5 contract tests. Approved.", "at": "2026-06-04T13:15:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-har-capture: correct response listener, defensive buffer read, per-session storage, 5 contract tests. Approved.", "at": "2026-06-04T13:15:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed file download handling — temp dir per session, Chrome download flag, CDP setDownloadBehavior, GET /v1/downloads (list) and GET /v1/downloads/:filename (binary retrieve), cleanup on destroy.", "at": "2026-06-03T17:00:00Z"}
   ]
 }
