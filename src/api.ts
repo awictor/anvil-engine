@@ -1,9 +1,12 @@
 import { createServer } from "node:http";
 import { SessionManager } from "./session.js";
 import { createCdpProxy } from "./cdp-proxy.js";
+import { BrowserPool } from "./pool.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
-const sessionManager = new SessionManager();
+const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
+const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
+const sessionManager = new SessionManager(pool);
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
@@ -248,15 +251,24 @@ createCdpProxy(server, sessionManager);
 async function shutdown(signal: string) {
   process.stderr.write(`[anvil-engine] ${signal} — destroying ${sessionManager.size} sessions...\n`);
   await sessionManager.destroyAll();
+  if (pool) await pool.shutdown();
   process.exit(0);
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-server.listen(PORT, () => {
-  process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
-  process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
-});
+// Start server (init pool first if configured)
+(async () => {
+  if (pool) {
+    process.stderr.write(`[anvil-engine] Pre-warming ${POOL_SIZE} browser instances...\n`);
+    await pool.init();
+    process.stderr.write(`[anvil-engine] Pool ready: ${pool.available} warm instances\n`);
+  }
+  server.listen(PORT, () => {
+    process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
+    process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
+  });
+})();
 
 // Helpers
 function json(res: import("node:http").ServerResponse, status: number, data: unknown) {
