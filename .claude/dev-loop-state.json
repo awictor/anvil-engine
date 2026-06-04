@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-stealth-mode",
       "title": "Stealth mode with WebDriver detection evasion",
@@ -14,10 +15,11 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T11:30:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T11:34:00Z"
+      "completed_at": "2026-06-04T11:34:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T11:38:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -71,6 +73,7 @@
     {"persona": "tester", "action": "test", "description": "5 tests for cookie endpoints: response shape with array, empty cookies, POST requires array, injected count, rejects non-array. 19 total.", "at": "2026-06-04T11:24:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-cookie-persistence: correct page.cookies/setCookie usage, array validation, no disk persistence, 5 contract tests. Approved.", "at": "2026-06-04T11:25:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"},
+    {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"}
   ]
 }

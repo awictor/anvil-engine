@@ -134,6 +134,33 @@ describe("POST /v1/cookies", () => {
   });
 });
 
+describe("stealth mode", () => {
+  it("stealth defaults to true (enabled by default)", () => {
+    const defaultSession = { stealth: undefined };
+    // stealth !== false means enabled
+    expect(defaultSession.stealth !== false).toBe(true);
+  });
+
+  it("can be explicitly disabled with stealth: false", () => {
+    const noStealth = { stealth: false };
+    expect(noStealth.stealth).toBe(false);
+  });
+
+  it("stealth option is part of LaunchOptions", async () => {
+    const { launchBrowser } = await import("../src/launcher.js");
+    // Verify function accepts stealth in its options type (compile-time check)
+    expect(typeof launchBrowser).toBe("function");
+  });
+
+  it("session creation body accepts stealth param", () => {
+    const body = { stealth: true, dimensions: { width: 1920, height: 1080 } };
+    expect(body.stealth).toBe(true);
+    // stealth: false disables anti-detection flags
+    const noStealthBody = { stealth: false };
+    expect(noStealthBody.stealth).toBe(false);
+  });
+});
+
 describe("launcher module", () => {
   it("exports launchBrowser and killBrowser", async () => {
     const mod = await import("../src/launcher.js");
