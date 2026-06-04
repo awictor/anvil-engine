@@ -6,20 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-har-capture",
-      "title": "HAR network capture for session recording",
-      "by": "architect",
-      "at": "2026-06-04T12:59:00Z",
-      "claimed_by": "builder",
-      "claimed_at": "2026-06-04T13:03:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T13:08:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T13:13:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -116,6 +103,18 @@
       "tested_at": "2026-06-04T12:54:00Z",
       "reviewed_by": "reviewer",
       "reviewed_at": "2026-06-04T12:56:00Z"
+    },
+    {
+      "id": "feat-har-capture",
+      "title": "HAR network capture for session recording",
+      "by": "architect",
+      "at": "2026-06-04T12:59:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T13:08:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T13:13:00Z",
+      "reviewed_by": "reviewer",
+      "reviewed_at": "2026-06-04T13:15:00Z"
     }
   ],
   "log": [
@@ -154,6 +153,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-request-interception: correct setRequestInterception, .catch safety, substring matching (no regex risk), 5 tests. Approved.", "at": "2026-06-04T12:56:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed HAR capture — POST /v1/har/start, POST /v1/har/stop, GET /v1/har. Simplified HAR entries (url, method, status, duration, size, timestamp). page.on('response') based.", "at": "2026-06-04T12:59:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: harStore Map per session, page.on('response') with timing+buffer size, 3 endpoints (start/stop/get). 15 endpoints total.", "at": "2026-06-04T13:08:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for HAR: start confirms recording, stop returns count, GET returns entries with all fields, correct types, empty when not started. 56 total.", "at": "2026-06-04T13:13:00Z"}
+    {"persona": "tester", "action": "test", "description": "5 tests for HAR: start confirms recording, stop returns count, GET returns entries with all fields, correct types, empty when not started. 56 total.", "at": "2026-06-04T13:13:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-har-capture: correct response listener, defensive buffer read, per-session storage, 5 contract tests. Approved.", "at": "2026-06-04T13:15:00Z"}
   ]
 }
