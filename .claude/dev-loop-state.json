@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-scrape-endpoint",
       "title": "Scrape endpoint with HTML-to-text conversion",
@@ -14,14 +15,16 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T10:10:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T10:12:00Z"
+      "completed_at": "2026-06-04T10:12:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T10:47:00Z"
     }
   ],
-  "needs_review": [],
   "done": [],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts (Chrome process management), session.ts (SessionManager), cdp-proxy.ts (WebSocket relay), api.ts (REST API with 7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed /v1/scrape endpoint — navigate + extract content in html/text/markdown format, wait for selector support", "at": "2026-06-04T10:05:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/scrape: navigate to URL, optional waitForSelector, extract as html or text, return {content, title, url}", "at": "2026-06-04T10:12:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/scrape: navigate to URL, optional waitForSelector, extract as html or text, return {content, title, url}", "at": "2026-06-04T10:12:00Z"},
+    {"persona": "tester", "action": "test", "description": "10 tests: API contract for scrape (url/format/selector/response shape), sessions create/release shapes, health shape, SessionManager import+size, launcher exports+port increment", "at": "2026-06-04T10:47:00Z"}
   ]
 }
