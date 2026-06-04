@@ -3,7 +3,15 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-request-interception",
+      "title": "Request interception for blocking and modification",
+      "spec": "Add POST /v1/intercept to enable/disable request interception with block rules.\n\nFiles to modify:\n- src/api.ts — add POST /v1/intercept endpoint\n\nEndpoint: POST /v1/intercept\n  Body: {\n    enabled: boolean,\n    blockPatterns?: string[]  // URL patterns to block (substring match)\n  }\n  Response: { enabled: boolean, blocking: number } (count of patterns)\n\nImplementation:\n  - Require active session\n  - Connect via puppeteer-core\n  - If enabled:\n    await page.setRequestInterception(true)\n    page.on('request', req => {\n      if (blockPatterns.some(p => req.url().includes(p))) {\n        req.abort();\n      } else {\n        req.continue();\n      }\n    });\n  - If disabled: page.setRequestInterception(false)\n  - Store blockPatterns on session for persistence\n\nUse cases: block analytics, ads, tracking pixels, large images.\nDo NOT add new dependencies.",
+      "by": "architect",
+      "at": "2026-06-04T12:40:00Z"
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -122,6 +130,7 @@
     {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"},
     {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-proxy-support: correct URL parsing, creds stripped from flag, page.authenticate on all nav endpoints, no credential leakage, 5 tests. Approved.", "at": "2026-06-04T12:37:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-proxy-support: correct URL parsing, creds stripped from flag, page.authenticate on all nav endpoints, no credential leakage, 5 tests. Approved.", "at": "2026-06-04T12:37:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed request interception — POST /v1/intercept with blockPatterns (substring URL matching), enable/disable toggle, blocks ads/analytics/trackers.", "at": "2026-06-04T12:40:00Z"}
   ]
 }
