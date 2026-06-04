@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-connection-pool",
       "title": "Connection pooling with warm browser instances",
@@ -14,10 +15,11 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T12:06:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T12:12:00Z"
+      "completed_at": "2026-06-04T12:12:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T12:16:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -103,6 +105,7 @@
     {"persona": "tester", "action": "test", "description": "10 tests for dockerfile: file exists, correct base image, chromium installed, CHROME_PATH set, port exposed, entrypoint correct, dockerignore exists/excludes, dist prereqs exist. 33 total.", "at": "2026-06-04T11:57:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-dockerfile: correct base image, chromium + fonts, CHROME_PATH, port 3000, lean .dockerignore, 10 tests. Approved.", "at": "2026-06-04T12:00:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed connection pooling — BrowserPool class with warm instances, acquire/release pattern, ANVIL_POOL_SIZE env, optional integration with SessionManager.", "at": "2026-06-04T12:03:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented BrowserPool in pool.ts (init/acquire/release/shutdown), integrated into SessionManager via constructor, ANVIL_POOL_SIZE env in api.ts, pool init before listen, shutdown on exit.", "at": "2026-06-04T12:12:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented BrowserPool in pool.ts (init/acquire/release/shutdown), integrated into SessionManager via constructor, ANVIL_POOL_SIZE env in api.ts, pool init before listen, shutdown on exit.", "at": "2026-06-04T12:12:00Z"},
+    {"persona": "tester", "action": "test", "description": "8 tests for pool: instantiation with default/custom size, starts empty, exports methods, SessionManager accepts pool, backward compat, env integration (0=disabled, >0=creates). 41 total.", "at": "2026-06-04T12:16:00Z"}
   ]
 }
