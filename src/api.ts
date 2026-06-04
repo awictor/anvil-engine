@@ -114,6 +114,10 @@ const server = createServer(async (req, res) => {
     // POST /v1/scrape — navigate and extract content
     if (method === "POST" && url.pathname === "/v1/scrape") {
       const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.url || typeof body.url !== "string") {
+        json(res, 400, { error: "body.url must be a non-empty string" });
+        return;
+      }
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
@@ -274,6 +278,10 @@ const server = createServer(async (req, res) => {
     // POST /v1/intercept — enable/disable request interception
     if (method === "POST" && url.pathname === "/v1/intercept") {
       const body = JSON.parse(await readBody(req) || "{}");
+      if (typeof body.enabled !== "boolean") {
+        json(res, 400, { error: "body.enabled must be a boolean" });
+        return;
+      }
       const session = sessionManager.getActive();
       if (!session) { json(res, 400, { error: "No active session" }); return; }
 
