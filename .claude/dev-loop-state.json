@@ -3,7 +3,15 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-dockerfile",
+      "title": "Dockerfile for containerized deployment",
+      "spec": "Add a Dockerfile that builds and runs anvil-engine with Chromium.\n\nFiles to create:\n- Dockerfile (NEW)\n- .dockerignore (NEW)\n\nDockerfile:\n  FROM node:22-slim\n  RUN apt-get update && apt-get install -y chromium --no-install-recommends && rm -rf /var/lib/apt/lists/*\n  ENV CHROME_PATH=/usr/bin/chromium\n  WORKDIR /app\n  COPY package*.json ./\n  RUN npm ci --omit=dev\n  COPY dist/ ./dist/\n  EXPOSE 3000\n  CMD [\"node\", \"dist/api.js\"]\n\n.dockerignore:\n  node_modules\n  src\n  test\n  .git\n  .claude\n  dist\n\nNote: requires `npm run build` before `docker build` (or add multi-stage).\nKeep it simple — single stage, pre-built dist.\nUse chromium from apt (not Chrome — smaller, no license issues).\nSet CHROME_PATH env so launcher finds it.\n\nDo NOT add docker-compose.yml yet (future feature).",
+      "by": "architect",
+      "at": "2026-06-04T11:43:00Z"
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -74,6 +82,7 @@
     {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"},
     {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-stealth-mode: correct Chrome flags, default enabled, opt-out pattern, 4 contract tests. Approved.", "at": "2026-06-04T11:40:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-stealth-mode: correct Chrome flags, default enabled, opt-out pattern, 4 contract tests. Approved.", "at": "2026-06-04T11:40:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed Dockerfile — node:22-slim + apt chromium, pre-built dist, CHROME_PATH env, exposes port 3000. Single stage, production-ready.", "at": "2026-06-04T11:43:00Z"}
   ]
 }
