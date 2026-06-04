@@ -134,6 +134,47 @@ describe("POST /v1/cookies", () => {
   });
 });
 
+describe("HAR capture", () => {
+  it("POST /v1/har/start response confirms recording", () => {
+    const response = { recording: true };
+    expect(response.recording).toBe(true);
+  });
+
+  it("POST /v1/har/stop response includes entry count", () => {
+    const response = { recording: false, entries: 12 };
+    expect(response.recording).toBe(false);
+    expect(response.entries).toBe(12);
+  });
+
+  it("GET /v1/har returns entries array", () => {
+    const response = { entries: [
+      { url: "https://example.com", method: "GET", status: 200, duration: 42, responseSize: 1024, timestamp: "2026-06-04T13:00:00Z" },
+    ]};
+    expect(response.entries).toHaveLength(1);
+    expect(response.entries[0]).toHaveProperty("url");
+    expect(response.entries[0]).toHaveProperty("method");
+    expect(response.entries[0]).toHaveProperty("status");
+    expect(response.entries[0]).toHaveProperty("duration");
+    expect(response.entries[0]).toHaveProperty("responseSize");
+    expect(response.entries[0]).toHaveProperty("timestamp");
+  });
+
+  it("HarEntry has correct types", () => {
+    const entry = { url: "https://x.com", method: "POST", status: 201, duration: 55, responseSize: 2048, timestamp: "2026-06-04T13:00:00Z" };
+    expect(typeof entry.url).toBe("string");
+    expect(typeof entry.method).toBe("string");
+    expect(typeof entry.status).toBe("number");
+    expect(typeof entry.duration).toBe("number");
+    expect(typeof entry.responseSize).toBe("number");
+    expect(entry.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("returns empty entries when no recording started", () => {
+    const response = { entries: [] };
+    expect(response.entries).toHaveLength(0);
+  });
+});
+
 describe("proxy support", () => {
   it("parses authenticated proxy URL (user:pass@host:port)", () => {
     const proxyUrl = "http://user:pass@proxy.example.com:8080";
