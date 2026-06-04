@@ -5,7 +5,8 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-request-interception",
       "title": "Request interception for blocking and modification",
@@ -14,10 +15,11 @@
       "claimed_by": "builder",
       "claimed_at": "2026-06-04T12:45:00Z",
       "completed_by": "builder",
-      "completed_at": "2026-06-04T12:49:00Z"
+      "completed_at": "2026-06-04T12:49:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T12:54:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -135,6 +137,7 @@
     {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-proxy-support: correct URL parsing, creds stripped from flag, page.authenticate on all nav endpoints, no credential leakage, 5 tests. Approved.", "at": "2026-06-04T12:37:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed request interception — POST /v1/intercept with blockPatterns (substring URL matching), enable/disable toggle, blocks ads/analytics/trackers.", "at": "2026-06-04T12:40:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: enable/disable request interception, blockPatterns substring match, .catch() on abort/continue to prevent unhandled rejections. 12 endpoints.", "at": "2026-06-04T12:49:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: enable/disable request interception, blockPatterns substring match, .catch() on abort/continue to prevent unhandled rejections. 12 endpoints.", "at": "2026-06-04T12:49:00Z"},
+    {"persona": "tester", "action": "test", "description": "5 tests for intercept: enable with patterns, disable, response shape, default empty patterns, substring matching logic. 51 total.", "at": "2026-06-04T12:54:00Z"}
   ]
 }

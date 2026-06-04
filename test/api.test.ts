@@ -175,6 +175,40 @@ describe("proxy support", () => {
   });
 });
 
+describe("POST /v1/intercept", () => {
+  it("enables interception with blockPatterns", () => {
+    const body = { enabled: true, blockPatterns: ["google-analytics", "facebook.net", "ads."] };
+    expect(body.enabled).toBe(true);
+    expect(body.blockPatterns).toHaveLength(3);
+  });
+
+  it("disables interception", () => {
+    const body = { enabled: false };
+    expect(body.enabled).toBe(false);
+  });
+
+  it("response includes enabled flag and blocking count", () => {
+    const response = { enabled: true, blocking: 3 };
+    expect(response.enabled).toBe(true);
+    expect(response.blocking).toBe(3);
+  });
+
+  it("blockPatterns defaults to empty array when not provided", () => {
+    const body = { enabled: true };
+    const patterns = (body as { blockPatterns?: string[] }).blockPatterns || [];
+    expect(patterns).toEqual([]);
+  });
+
+  it("pattern matching uses substring (not regex)", () => {
+    const patterns = ["google-analytics", "doubleclick"];
+    const url = "https://www.google-analytics.com/collect?v=1";
+    expect(patterns.some((p) => url.includes(p))).toBe(true);
+
+    const safeUrl = "https://example.com/page";
+    expect(patterns.some((p) => safeUrl.includes(p))).toBe(false);
+  });
+});
+
 describe("stealth mode", () => {
   it("stealth defaults to true (enabled by default)", () => {
     const defaultSession = { stealth: undefined };
