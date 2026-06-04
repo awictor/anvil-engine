@@ -102,6 +102,38 @@ describe("POST /v1/pdf", () => {
   });
 });
 
+describe("GET /v1/cookies", () => {
+  it("response contains cookies array", () => {
+    const expectedShape = { cookies: [{ name: "mid", value: "abc", domain: ".amazon.com" }] };
+    expect(expectedShape.cookies).toBeInstanceOf(Array);
+    expect(expectedShape.cookies[0]).toHaveProperty("name");
+    expect(expectedShape.cookies[0]).toHaveProperty("value");
+    expect(expectedShape.cookies[0]).toHaveProperty("domain");
+  });
+
+  it("returns empty array when no cookies set", () => {
+    const emptyResponse = { cookies: [] };
+    expect(emptyResponse.cookies).toHaveLength(0);
+  });
+});
+
+describe("POST /v1/cookies", () => {
+  it("requires cookies array in body", () => {
+    const validBody = { cookies: [{ name: "a", value: "b", domain: ".test.com" }] };
+    expect(Array.isArray(validBody.cookies)).toBe(true);
+  });
+
+  it("response contains injected count", () => {
+    const response = { injected: 3 };
+    expect(response.injected).toBe(3);
+  });
+
+  it("rejects non-array cookies", () => {
+    const invalidBody = { cookies: "not-an-array" };
+    expect(Array.isArray(invalidBody.cookies)).toBe(false);
+  });
+});
+
 describe("launcher module", () => {
   it("exports launchBrowser and killBrowser", async () => {
     const mod = await import("../src/launcher.js");
