@@ -26,6 +26,7 @@ const server = createServer(async (req, res) => {
         height: options.dimensions?.height,
         proxy: options.proxyUrl,
         userDataDir: options.userDataDir,
+        stealth: options.stealth,
       });
 
       json(res, 201, {

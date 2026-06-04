@@ -3,17 +3,20 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-stealth-mode",
       "title": "Stealth mode with WebDriver detection evasion",
-      "spec": "Add stealth flags to launcher to evade basic bot detection.\n\nFiles to modify:\n- src/launcher.ts — add stealth args to Chrome launch flags\n- src/api.ts — accept stealth option in POST /v1/sessions body\n\nIn launcher.ts, add these args when stealth is enabled:\n  '--disable-blink-features=AutomationControlled',\n  '--disable-features=AutomationControlled',\n  '--disable-infobars',\n\nIn session creation (api.ts), pass stealth option to launcher:\n  Body gains: { stealth?: boolean } (default true)\n  Pass to launchBrowser({ ...options, stealth: body.stealth !== false })\n\nIn launcher.ts LaunchOptions:\n  stealth?: boolean;\n\nIn launchBrowser(), if options.stealth !== false:\n  - Add the 3 stealth args above\n  - After browser connects, inject navigator.webdriver override:\n    This is done via CDP command on first page\n\nActually — keep it simpler for now. Just add the Chrome flags.\nThe navigator.webdriver JS injection is a separate feature (needs page evaluation after launch).\n\nDo NOT add new npm dependencies.\nKeep changes to launcher.ts args + api.ts body parsing.",
       "by": "architect",
-      "at": "2026-06-04T11:28:00Z"
+      "at": "2026-06-04T11:28:00Z",
+      "claimed_by": "builder",
+      "claimed_at": "2026-06-04T11:30:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T11:34:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {
@@ -67,6 +70,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/cookies (page.cookies()) and POST /v1/cookies (page.setCookie with array validation). 11 endpoints total.", "at": "2026-06-04T11:22:00Z"},
     {"persona": "tester", "action": "test", "description": "5 tests for cookie endpoints: response shape with array, empty cookies, POST requires array, injected count, rejects non-array. 19 total.", "at": "2026-06-04T11:24:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-cookie-persistence: correct page.cookies/setCookie usage, array validation, no disk persistence, 5 contract tests. Approved.", "at": "2026-06-04T11:25:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"}
   ]
 }

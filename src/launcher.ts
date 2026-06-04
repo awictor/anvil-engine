@@ -8,6 +8,7 @@ export interface LaunchOptions {
   height?: number;
   userDataDir?: string;
   proxy?: string;
+  stealth?: boolean;
   args?: string[];
 }
 
@@ -76,6 +77,14 @@ export async function launchBrowser(options: LaunchOptions = {}): Promise<Browse
 
   if (options.headless !== false) {
     args.push("--headless=new");
+  }
+
+  if (options.stealth !== false) {
+    args.push(
+      "--disable-blink-features=AutomationControlled",
+      "--disable-features=AutomationControlled",
+      "--disable-infobars",
+    );
   }
 
   if (options.userDataDir) {
