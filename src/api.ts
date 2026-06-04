@@ -8,6 +8,16 @@ const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
 
+interface HarEntry {
+  url: string;
+  method: string;
+  status: number;
+  duration: number;
+  responseSize: number;
+  timestamp: string;
+}
+const harStore = new Map<string, HarEntry[]>();
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
   const method = req.method || "GET";
@@ -201,6 +211,62 @@ const server = createServer(async (req, res) => {
       browser.disconnect();
 
       json(res, 200, { injected: body.cookies.length });
+      return;
+    }
+
+    // POST /v1/har/start — begin network recording
+    if (method === "POST" && url.pathname === "/v1/har/start") {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      harStore.set(session.id, []);
+      const puppeteer = await import("puppeteer-core");
+      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
+
+      page.on("response", async (response) => {
+        const entries = harStore.get(session.id);
+        if (!entries) return;
+        try {
+          const req = response.request();
+          const timing = response.timing();
+          const buffer = await response.buffer().catch(() => Buffer.alloc(0));
+          entries.push({
+            url: req.url(),
+            method: req.method(),
+            status: response.status(),
+            duration: timing ? Math.round(timing.receiveHeadersEnd) : 0,
+            responseSize: buffer.length,
+            timestamp: new Date().toISOString(),
+          });
+        } catch {
+          // Skip failed entries
+        }
+      });
+
+      browser.disconnect();
+      json(res, 200, { recording: true });
+      return;
+    }
+
+    // POST /v1/har/stop — stop network recording
+    if (method === "POST" && url.pathname === "/v1/har/stop") {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const entries = harStore.get(session.id) || [];
+      json(res, 200, { recording: false, entries: entries.length });
+      return;
+    }
+
+    // GET /v1/har — retrieve captured entries
+    if (method === "GET" && url.pathname === "/v1/har") {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const entries = harStore.get(session.id) || [];
+      json(res, 200, { entries });
       return;
     }
 

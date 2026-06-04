@@ -3,17 +3,20 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-har-capture",
       "title": "HAR network capture for session recording",
-      "spec": "Add endpoints to start/stop network recording and retrieve HAR data.\n\nFiles to modify:\n- src/api.ts — add POST /v1/har/start, POST /v1/har/stop, GET /v1/har\n\nEndpoints:\n\n1. POST /v1/har/start\n   Response: { recording: true }\n   Implementation: enable CDP Network domain, collect request/response entries\n\n2. POST /v1/har/stop\n   Response: { recording: false, entries: number }\n   Implementation: stop collecting, keep data in memory\n\n3. GET /v1/har\n   Response: HAR-like JSON { entries: Array<{url, method, status, duration, size}> }\n   Implementation: return collected entries\n\nSimplified HAR — not full HAR 1.2 spec, just the useful fields:\n  { url, method, status, duration (ms), responseSize (bytes), timestamp }\n\nImplementation approach:\n  Use page.on('response') to capture each completed request:\n    entries.push({ url, method: req.method(), status: res.status(),\n      duration: timing, responseSize: (await res.buffer()).length, timestamp })\n\nStore entries array on a module-level Map keyed by session ID.\nDo NOT add new dependencies.",
       "by": "architect",
-      "at": "2026-06-04T12:59:00Z"
+      "at": "2026-06-04T12:59:00Z",
+      "claimed_by": "builder",
+      "claimed_at": "2026-06-04T13:03:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T13:08:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {
@@ -147,6 +150,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: enable/disable request interception, blockPatterns substring match, .catch() on abort/continue to prevent unhandled rejections. 12 endpoints.", "at": "2026-06-04T12:49:00Z"},
     {"persona": "tester", "action": "test", "description": "5 tests for intercept: enable with patterns, disable, response shape, default empty patterns, substring matching logic. 51 total.", "at": "2026-06-04T12:54:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-request-interception: correct setRequestInterception, .catch safety, substring matching (no regex risk), 5 tests. Approved.", "at": "2026-06-04T12:56:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed HAR capture — POST /v1/har/start, POST /v1/har/stop, GET /v1/har. Simplified HAR entries (url, method, status, duration, size, timestamp). page.on('response') based.", "at": "2026-06-04T12:59:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed HAR capture — POST /v1/har/start, POST /v1/har/stop, GET /v1/har. Simplified HAR entries (url, method, status, duration, size, timestamp). page.on('response') based.", "at": "2026-06-04T12:59:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: harStore Map per session, page.on('response') with timing+buffer size, 3 endpoints (start/stop/get). 15 endpoints total.", "at": "2026-06-04T13:08:00Z"}
   ]
 }
