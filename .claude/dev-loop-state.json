@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "project": "anvil-engine",
+  "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
+  "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
+  "backlog": [
+    {
+      "id": "feat-scrape-endpoint",
+      "title": "Scrape endpoint with HTML-to-text conversion",
+      "spec": "Add POST /v1/scrape that navigates to a URL and returns page content.\n\nFiles to modify:\n- src/api.ts — add /v1/scrape route\n\nEndpoint: POST /v1/scrape\n  Body: { url: string, waitForSelector?: string, format?: 'html' | 'text' | 'markdown' }\n  Response: { content: string, title: string, url: string }\n\nImplementation:\n  - Require active session (400 if none)\n  - Connect to browser via puppeteer-core\n  - Navigate to url, optionally wait for selector\n  - Extract content based on format:\n    - 'html': page.content()\n    - 'text': page.evaluate(() => document.body.innerText)\n    - 'markdown': same as text for now (markdown conversion is future)\n  - Return { content, title, url }\n  - Disconnect (don't close browser)\n\nPattern: follow existing /v1/actions/navigate structure in api.ts.\nDo NOT add new dependencies.",
+      "by": "architect",
+      "at": "2026-06-04T10:05:00Z"
+    }
+  ],
+  "in_progress": [],
+  "needs_tests": [],
+  "needs_review": [],
+  "done": [],
+  "log": [
+    {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts (Chrome process management), session.ts (SessionManager), cdp-proxy.ts (WebSocket relay), api.ts (REST API with 7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed /v1/scrape endpoint — navigate + extract content in html/text/markdown format, wait for selector support", "at": "2026-06-04T10:05:00Z"}
+  ]
+}
