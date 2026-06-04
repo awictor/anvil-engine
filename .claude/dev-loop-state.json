@@ -6,20 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-cookie-persistence",
-      "title": "Cookie persistence across sessions",
-      "by": "architect",
-      "at": "2026-06-04T11:12:00Z",
-      "claimed_by": "builder",
-      "claimed_at": "2026-06-04T11:18:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:22:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:24:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {
       "id": "feat-scrape-endpoint",
@@ -44,6 +31,18 @@
       "tested_at": "2026-06-04T11:06:00Z",
       "reviewed_by": "reviewer",
       "reviewed_at": "2026-06-04T11:08:00Z"
+    },
+    {
+      "id": "feat-cookie-persistence",
+      "title": "Cookie persistence across sessions",
+      "by": "architect",
+      "at": "2026-06-04T11:12:00Z",
+      "completed_by": "builder",
+      "completed_at": "2026-06-04T11:22:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-04T11:24:00Z",
+      "reviewed_by": "reviewer",
+      "reviewed_at": "2026-06-04T11:25:00Z"
     }
   ],
   "log": [
@@ -58,6 +57,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-pdf-endpoint: correct binary response, headless-only noted, format/landscape params, 4 contract tests. Approved.", "at": "2026-06-04T11:08:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed cookie persistence — GET /v1/cookies (extract all) and POST /v1/cookies (inject array). Engine-level API, no disk persistence (MCP layer handles that).", "at": "2026-06-04T11:12:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/cookies (page.cookies()) and POST /v1/cookies (page.setCookie with array validation). 11 endpoints total.", "at": "2026-06-04T11:22:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for cookie endpoints: response shape with array, empty cookies, POST requires array, injected count, rejects non-array. 19 total.", "at": "2026-06-04T11:24:00Z"}
+    {"persona": "tester", "action": "test", "description": "5 tests for cookie endpoints: response shape with array, empty cookies, POST requires array, injected count, rejects non-array. 19 total.", "at": "2026-06-04T11:24:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-cookie-persistence: correct page.cookies/setCookie usage, array validation, no disk persistence, 5 contract tests. Approved.", "at": "2026-06-04T11:25:00Z"}
   ]
 }
