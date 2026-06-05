@@ -3,36 +3,16 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-api-key-auth",
       "title": "API key authentication middleware",
-      "by": "architect",
-      "at": "2026-06-05T14:53:00Z",
-      "spec": {
-        "summary": "Optional API key authentication via ANVIL_API_KEY env var. When set, all requests must include Authorization: Bearer <key> header. When unset, no auth required (dev mode).",
-        "implementation_notes": [
-          "Check ANVIL_API_KEY env var at startup",
-          "If set, validate Authorization header on every request (except OPTIONS for CORS)",
-          "Header format: 'Authorization: Bearer <key>'",
-          "Return 401 {error: 'Unauthorized'} if missing or invalid",
-          "Skip auth entirely if ANVIL_API_KEY is not set (dev-friendly default)",
-          "Add auth check early in request handler, before route matching",
-          "Log auth mode at startup: 'API key auth enabled' or 'Running without auth (dev mode)'"
-        ],
-        "files_to_modify": ["src/api.ts"],
-        "acceptance_criteria": [
-          "When ANVIL_API_KEY is set, requests without valid Bearer token get 401",
-          "When ANVIL_API_KEY is unset, all requests pass through (no auth)",
-          "OPTIONS requests always pass (CORS preflight)",
-          "Correct key in Authorization header allows access",
-          "Startup log indicates auth mode"
-        ]
-      }
+      "completed_by": "builder",
+      "completed_at": "2026-06-05T15:00:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
@@ -65,6 +45,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented 5 page action endpoints: click (button/clickCount), type (text/delay), select (multi-value), hover, wait (timeout 10s default). All use withBrowser, validate selector, return {success, selector}. 22 endpoints total.", "at": "2026-06-05T14:45:00Z"},
     {"persona": "tester", "action": "test", "description": "30 tests for page actions: click (selector/button/clickCount/defaults), type (selector/text/delay), select (values array/single/multi), hover (selector), wait (timeout default 10s), shared contract (5 endpoints, error format, withBrowser). 118 total.", "at": "2026-06-05T14:50:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-page-actions: correct selector validation, safe puppeteer delegation, withBrowser guarantees disconnect, proper defaults, 30 tests. Approved.", "at": "2026-06-05T14:52:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed API key authentication: ANVIL_API_KEY env var, Bearer token validation, 401 on failure, skip when unset (dev mode), exempt OPTIONS for CORS.", "at": "2026-06-05T14:53:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed API key authentication: ANVIL_API_KEY env var, Bearer token validation, 401 on failure, skip when unset (dev mode), exempt OPTIONS for CORS.", "at": "2026-06-05T14:53:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented API key auth: ANVIL_API_KEY env, Bearer token check before route matching, 401 on failure, skip when unset, OPTIONS exempt, startup log shows auth mode.", "at": "2026-06-05T15:00:00Z"}
   ]
 }

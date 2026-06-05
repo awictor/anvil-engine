@@ -7,6 +7,7 @@ import { BrowserPool } from "./pool.js";
 import { withBrowser } from "./browser-helper.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
+const API_KEY = process.env.ANVIL_API_KEY || "";
 const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
@@ -30,6 +31,15 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+  // API key authentication
+  if (API_KEY) {
+    const auth = req.headers.authorization || "";
+    if (auth !== `Bearer ${API_KEY}`) {
+      json(res, 401, { error: "Unauthorized" });
+      return;
+    }
+  }
 
   try {
     // POST /v1/sessions — create session
@@ -522,6 +532,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
   server.listen(PORT, () => {
     process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
     process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
+    process.stderr.write(`[anvil-engine] Auth: ${API_KEY ? "API key enabled" : "disabled (dev mode)"}\n`);
   });
 })();
 
