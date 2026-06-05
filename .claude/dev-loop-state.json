@@ -5,12 +5,15 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-fingerprint-randomization",
       "title": "Browser fingerprint randomization for advanced anti-detection",
       "completed_by": "builder",
-      "completed_at": "2026-06-05T15:42:00Z"
+      "completed_at": "2026-06-05T15:42:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-05T15:44:00Z"
     }
   ],
   "needs_review": [],
@@ -67,6 +70,7 @@
     {"persona": "tester", "action": "test", "description": "18 tests for userAgent/viewport: body acceptance, optional/backward-compat, response shape (set/null), LaunchOptions field, viewport defaults/overrides, GET /v1/sessions/:id (404/details/URL pattern/list exclusion), setUserAgent conditional, backward compat. 198 total.", "at": "2026-06-05T15:34:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-useragent-viewport: correct setUserAgent/setViewport in withBrowser, optional field with null default, GET /v1/sessions/:id with list exclusion, 18 tests. Approved.", "at": "2026-06-05T15:36:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed fingerprint randomization: canvas noise, WebGL vendor/renderer, AudioContext offset, navigator props. Deterministic seed per session (consistent within, unique across). evaluateOnNewDocument injection. Gated by stealth mode.", "at": "2026-06-05T15:40:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented fingerprint randomization in src/fingerprint.ts: xorshift32 PRNG from session ID seed, canvas toDataURL/toBlob noise, WebGL VENDOR/RENDERER override, navigator.hardwareConcurrency/deviceMemory, AudioContext detune offset. Injected via evaluateOnNewDocument on session create when stealth enabled. Response reports fingerprint: true/false.", "at": "2026-06-05T15:42:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented fingerprint randomization in src/fingerprint.ts: xorshift32 PRNG from session ID seed, canvas toDataURL/toBlob noise, WebGL VENDOR/RENDERER override, navigator.hardwareConcurrency/deviceMemory, AudioContext detune offset. Injected via evaluateOnNewDocument on session create when stealth enabled. Response reports fingerprint: true/false.", "at": "2026-06-05T15:42:00Z"},
+    {"persona": "tester", "action": "test", "description": "25 tests for fingerprint: generateFingerprintScript (export/returns string/different seeds differ/same seed identical/IIFE), canvas overrides (toDataURL/toBlob/createImageData), WebGL (getParameter/WebGL2/37445/37446/GPU variants), navigator (hardwareConcurrency/deviceMemory/values), AudioContext (createOscillator/detune), PRNG (xorshift/seed embed/range), stealth gating. 223 total.", "at": "2026-06-05T15:44:00Z"}
   ]
 }
