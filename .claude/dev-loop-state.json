@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-fingerprint-randomization",
-      "title": "Browser fingerprint randomization for advanced anti-detection",
-      "completed_by": "builder",
-      "completed_at": "2026-06-05T15:42:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-05T15:44:00Z"
-    }
-  ],
+  "needs_review": [],
   "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
@@ -32,7 +23,8 @@
     {"id": "feat-api-key-auth", "title": "API key authentication middleware"},
     {"id": "feat-session-timeout", "title": "Session timeout with auto-cleanup of idle sessions"},
     {"id": "feat-session-targeting", "title": "Target specific sessions by ID via X-Session-Id header or query param"},
-    {"id": "feat-useragent-viewport", "title": "Custom user-agent and viewport emulation per session"}
+    {"id": "feat-useragent-viewport", "title": "Custom user-agent and viewport emulation per session"},
+    {"id": "feat-fingerprint-randomization", "title": "Browser fingerprint randomization for advanced anti-detection"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -71,6 +63,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-useragent-viewport: correct setUserAgent/setViewport in withBrowser, optional field with null default, GET /v1/sessions/:id with list exclusion, 18 tests. Approved.", "at": "2026-06-05T15:36:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed fingerprint randomization: canvas noise, WebGL vendor/renderer, AudioContext offset, navigator props. Deterministic seed per session (consistent within, unique across). evaluateOnNewDocument injection. Gated by stealth mode.", "at": "2026-06-05T15:40:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented fingerprint randomization in src/fingerprint.ts: xorshift32 PRNG from session ID seed, canvas toDataURL/toBlob noise, WebGL VENDOR/RENDERER override, navigator.hardwareConcurrency/deviceMemory, AudioContext detune offset. Injected via evaluateOnNewDocument on session create when stealth enabled. Response reports fingerprint: true/false.", "at": "2026-06-05T15:42:00Z"},
-    {"persona": "tester", "action": "test", "description": "25 tests for fingerprint: generateFingerprintScript (export/returns string/different seeds differ/same seed identical/IIFE), canvas overrides (toDataURL/toBlob/createImageData), WebGL (getParameter/WebGL2/37445/37446/GPU variants), navigator (hardwareConcurrency/deviceMemory/values), AudioContext (createOscillator/detune), PRNG (xorshift/seed embed/range), stealth gating. 223 total.", "at": "2026-06-05T15:44:00Z"}
+    {"persona": "tester", "action": "test", "description": "25 tests for fingerprint: generateFingerprintScript (export/returns string/different seeds differ/same seed identical/IIFE), canvas overrides (toDataURL/toBlob/createImageData), WebGL (getParameter/WebGL2/37445/37446/GPU variants), navigator (hardwareConcurrency/deviceMemory/values), AudioContext (createOscillator/detune), PRNG (xorshift/seed embed/range), stealth gating. 223 total.", "at": "2026-06-05T15:44:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-fingerprint-randomization: correct PRNG seeding, proper prototype overrides (canvas/WebGL/navigator/AudioContext), JSON.stringify prevents injection, evaluateOnNewDocument persists across navigations, 25 tests. New-page limitation noted (non-blocking). Approved.", "at": "2026-06-05T15:46:00Z"}
   ]
 }
