@@ -3,37 +3,16 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-file-upload",
       "title": "File upload handling for form file inputs",
-      "by": "architect",
-      "at": "2026-06-05T16:00:00Z",
-      "spec": {
-        "summary": "Upload files to page file inputs via POST /v1/actions/upload. Accepts selector for the file input and base64-encoded file data. Writes to a temp file, uses page.uploadFile(), cleans up after.",
-        "implementation_notes": [
-          "POST /v1/actions/upload — body: {selector, filename, data (base64)}",
-          "Validate selector (non-empty string), filename (non-empty, no path traversal), data (non-empty string)",
-          "Decode base64 data, write to temp file in session's download dir (reuse existing temp dir)",
-          "Use page.locator(selector).uploadFile(tempPath) or element.uploadFile()",
-          "Clean up temp file after upload completes",
-          "Return {success: true, selector, filename}",
-          "Size limit: data must be < 10MB after base64 decode (reject with 400 if larger)"
-        ],
-        "files_to_modify": ["src/api.ts"],
-        "acceptance_criteria": [
-          "POST /v1/actions/upload accepts selector, filename, base64 data",
-          "File is written to temp location and uploaded to the input element",
-          "Temp file is cleaned up after upload",
-          "Rejects filenames with path traversal characters",
-          "Rejects data over 10MB",
-          "Returns success with selector and filename"
-        ]
-      }
+      "completed_by": "builder",
+      "completed_at": "2026-06-05T16:02:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "needs_review": [],
   "done": [
@@ -94,6 +73,7 @@
     {"persona": "tester", "action": "test", "description": "25 tests for fingerprint: generateFingerprintScript (export/returns string/different seeds differ/same seed identical/IIFE), canvas overrides (toDataURL/toBlob/createImageData), WebGL (getParameter/WebGL2/37445/37446/GPU variants), navigator (hardwareConcurrency/deviceMemory/values), AudioContext (createOscillator/detune), PRNG (xorshift/seed embed/range), stealth gating. 223 total.", "at": "2026-06-05T15:44:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-fingerprint-randomization: correct PRNG seeding, proper prototype overrides (canvas/WebGL/navigator/AudioContext), JSON.stringify prevents injection, evaluateOnNewDocument persists across navigations, 25 tests. New-page limitation noted (non-blocking). Approved.", "at": "2026-06-05T15:46:00Z"},
     {"persona": "security", "action": "harden", "description": "Added request body size limit (1MB) in readBody() — prevents memory exhaustion from oversized payloads. Added 100KB script size cap on /v1/actions/evaluate. req.destroy() on overflow.", "at": "2026-06-05T15:48:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed file upload: POST /v1/actions/upload with selector + filename + base64 data. Write to temp, page.uploadFile(), cleanup after. 10MB data limit, path traversal rejection, reuses session downloadDir.", "at": "2026-06-05T16:00:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed file upload: POST /v1/actions/upload with selector + filename + base64 data. Write to temp, page.uploadFile(), cleanup after. 10MB data limit, path traversal rejection, reuses session downloadDir.", "at": "2026-06-05T16:00:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/actions/upload: validate selector/filename/data, reject path traversal, decode base64, enforce 10MB limit, write temp file to downloadDir, page.$(selector).uploadFile(), cleanup in finally block. 24 endpoints total.", "at": "2026-06-05T16:02:00Z"}
   ]
 }

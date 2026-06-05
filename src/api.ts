@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readdirSync, statSync, createReadStream } from "node:fs";
+import { readdirSync, statSync, createReadStream, writeFileSync, unlinkSync } from "node:fs";
 import { join, basename } from "node:path";
 import { SessionManager } from "./session.js";
 import { createCdpProxy } from "./cdp-proxy.js";
@@ -438,6 +438,51 @@ const server = createServer(async (req, res) => {
         await page.waitForSelector(body.selector, { timeout: body.timeout || 10000 });
       });
       json(res, 200, { success: true, selector: body.selector });
+      return;
+    }
+
+    // POST /v1/actions/upload — upload file to input element
+    if (method === "POST" && url.pathname === "/v1/actions/upload") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      if (!body.filename || typeof body.filename !== "string") {
+        json(res, 400, { error: "body.filename must be a non-empty string" });
+        return;
+      }
+      if (body.filename.includes("..") || body.filename.includes("/") || body.filename.includes("\\")) {
+        json(res, 400, { error: "Invalid filename" });
+        return;
+      }
+      if (!body.data || typeof body.data !== "string") {
+        json(res, 400, { error: "body.data must be a non-empty base64 string" });
+        return;
+      }
+      const decoded = Buffer.from(body.data, "base64");
+      if (decoded.length > 10_485_760) {
+        json(res, 400, { error: "File data exceeds 10MB limit" });
+        return;
+      }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
+
+      const dir = session.browserProcess.downloadDir;
+      if (!dir) { json(res, 500, { error: "No temp directory available" }); return; }
+
+      const tempPath = join(dir, basename(body.filename));
+      writeFileSync(tempPath, decoded);
+      try {
+        await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+          const input = await page.$(body.selector) as import("puppeteer-core").ElementHandle<HTMLInputElement> | null;
+          if (!input) throw new Error(`Element not found: ${body.selector}`);
+          await input.uploadFile(tempPath);
+        });
+        json(res, 200, { success: true, selector: body.selector, filename: body.filename });
+      } finally {
+        try { unlinkSync(tempPath); } catch {}
+      }
       return;
     }
 
