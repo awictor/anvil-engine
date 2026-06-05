@@ -1,6 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { platform } from "node:os";
-import { existsSync } from "node:fs";
+import { platform, tmpdir } from "node:os";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 
 export interface LaunchOptions {
   headless?: boolean;
@@ -23,6 +25,7 @@ export interface BrowserProcess {
   cdpPort: number;
   wsEndpoint: string;
   proxyCredentials?: ProxyCredentials;
+  downloadDir?: string;
 }
 
 const CHROME_PATHS: Record<string, string[]> = {
@@ -121,6 +124,11 @@ export async function launchBrowser(options: LaunchOptions = {}): Promise<Browse
     }
   }
 
+  // Per-session download directory
+  const downloadDir = join(tmpdir(), `anvil-downloads-${randomUUID()}`);
+  mkdirSync(downloadDir, { recursive: true });
+  args.push(`--download-default-directory=${downloadDir}`);
+
   if (options.args) {
     args.push(...options.args);
   }
@@ -141,6 +149,7 @@ export async function launchBrowser(options: LaunchOptions = {}): Promise<Browse
     cdpPort,
     wsEndpoint,
     proxyCredentials,
+    downloadDir,
   };
 }
 

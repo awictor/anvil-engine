@@ -3,199 +3,39 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-file-download",
       "title": "File download handling with download directory and retrieval endpoint",
-      "by": "architect",
-      "at": "2026-06-03T17:00:00Z",
-      "spec": {
-        "summary": "Enable file downloads triggered by page interactions. Chromium downloads to a temp dir per session, exposed via GET /v1/downloads (list) and GET /v1/downloads/:filename (retrieve binary).",
-        "endpoints": [
-          {
-            "method": "GET",
-            "path": "/v1/downloads",
-            "description": "List files in the session's download directory",
-            "response": "{ files: [{ name, size, createdAt }] }"
-          },
-          {
-            "method": "GET",
-            "path": "/v1/downloads/:filename",
-            "description": "Retrieve a downloaded file as binary",
-            "response": "Binary file with Content-Disposition header"
-          }
-        ],
-        "implementation_notes": [
-          "Create a temp download dir per session (os.tmpdir() + session.id)",
-          "Set Chrome --download-default-directory flag in launcher.ts",
-          "Store downloadDir on BrowserProcess interface",
-          "Use CDP Page.setDownloadBehavior with allowAndName policy",
-          "List endpoint reads fs.readdir, stat for size/time",
-          "Retrieve endpoint streams the file with correct Content-Type (mime-types lookup)",
-          "Cleanup: rm -rf download dir on session destroy"
-        ],
-        "files_to_modify": ["src/launcher.ts", "src/api.ts"],
-        "acceptance_criteria": [
-          "Session creation sets up a unique download dir",
-          "Chrome is configured to save downloads there automatically",
-          "GET /v1/downloads returns file list with metadata",
-          "GET /v1/downloads/:filename returns binary with correct headers",
-          "Download dir is cleaned up on session destroy"
-        ]
-      }
+      "completed_by": "builder",
+      "completed_at": "2026-06-05T14:37:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
-    {
-      "id": "feat-scrape-endpoint",
-      "title": "Scrape endpoint with HTML-to-text conversion",
-      "by": "architect",
-      "at": "2026-06-04T10:05:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T10:12:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T10:47:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T10:50:00Z"
-    },
-    {
-      "id": "feat-pdf-endpoint",
-      "title": "PDF generation endpoint",
-      "by": "architect",
-      "at": "2026-06-04T10:55:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:01:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:06:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T11:08:00Z"
-    },
-    {
-      "id": "feat-cookie-persistence",
-      "title": "Cookie persistence across sessions",
-      "by": "architect",
-      "at": "2026-06-04T11:12:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:22:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:24:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T11:25:00Z"
-    },
-    {
-      "id": "feat-stealth-mode",
-      "title": "Stealth mode with WebDriver detection evasion",
-      "by": "architect",
-      "at": "2026-06-04T11:28:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:34:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:38:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T11:40:00Z"
-    },
-    {
-      "id": "feat-dockerfile",
-      "title": "Dockerfile for containerized deployment",
-      "by": "architect",
-      "at": "2026-06-04T11:43:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T11:52:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T11:57:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T12:00:00Z"
-    },
-    {
-      "id": "feat-connection-pool",
-      "title": "Connection pooling with warm browser instances",
-      "by": "architect",
-      "at": "2026-06-04T12:03:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T12:12:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T12:16:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T12:18:00Z"
-    },
-    {
-      "id": "feat-proxy-support",
-      "title": "Proxy configuration per session",
-      "by": "architect",
-      "at": "2026-06-04T12:22:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T12:32:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T12:35:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T12:37:00Z"
-    },
-    {
-      "id": "feat-request-interception",
-      "title": "Request interception for blocking and modification",
-      "by": "architect",
-      "at": "2026-06-04T12:40:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T12:49:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T12:54:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T12:56:00Z"
-    },
-    {
-      "id": "feat-har-capture",
-      "title": "HAR network capture for session recording",
-      "by": "architect",
-      "at": "2026-06-04T12:59:00Z",
-      "completed_by": "builder",
-      "completed_at": "2026-06-04T13:08:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-04T13:13:00Z",
-      "reviewed_by": "reviewer",
-      "reviewed_at": "2026-06-04T13:15:00Z"
-    }
+    {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
+    {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
+    {"id": "feat-cookie-persistence", "title": "Cookie persistence across sessions"},
+    {"id": "feat-stealth-mode", "title": "Stealth mode with WebDriver detection evasion"},
+    {"id": "feat-dockerfile", "title": "Dockerfile for containerized deployment"},
+    {"id": "feat-connection-pool", "title": "Connection pooling with warm browser instances"},
+    {"id": "feat-proxy-support", "title": "Proxy configuration per session"},
+    {"id": "feat-request-interception", "title": "Request interception for blocking and modification"},
+    {"id": "feat-har-capture", "title": "HAR network capture for session recording"}
   ],
   "log": [
-    {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts (Chrome process management), session.ts (SessionManager), cdp-proxy.ts (WebSocket relay), api.ts (REST API with 7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed /v1/scrape endpoint — navigate + extract content in html/text/markdown format, wait for selector support", "at": "2026-06-04T10:05:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/scrape: navigate to URL, optional waitForSelector, extract as html or text, return {content, title, url}", "at": "2026-06-04T10:12:00Z"},
-    {"persona": "tester", "action": "test", "description": "10 tests: API contract for scrape (url/format/selector/response shape), sessions create/release shapes, health shape, SessionManager import+size, launcher exports+port increment", "at": "2026-06-04T10:47:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-scrape-endpoint: correct format handling, safe selector passthrough, follows existing patterns, 10 contract tests. Approved.", "at": "2026-06-04T10:50:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed POST /v1/pdf — generate PDF with optional URL navigation, A4/Letter format, landscape mode. Returns binary PDF.", "at": "2026-06-04T10:55:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/pdf: optional URL navigation, configurable format (A4/Letter), landscape mode, printBackground, returns binary PDF. 9 endpoints total.", "at": "2026-06-04T11:01:00Z"},
-    {"persona": "tester", "action": "test", "description": "4 tests for pdf endpoint: optional url, format A4/Letter, landscape param, binary content-type contract. 14 total tests.", "at": "2026-06-04T11:06:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-pdf-endpoint: correct binary response, headless-only noted, format/landscape params, 4 contract tests. Approved.", "at": "2026-06-04T11:08:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed cookie persistence — GET /v1/cookies (extract all) and POST /v1/cookies (inject array). Engine-level API, no disk persistence (MCP layer handles that).", "at": "2026-06-04T11:12:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/cookies (page.cookies()) and POST /v1/cookies (page.setCookie with array validation). 11 endpoints total.", "at": "2026-06-04T11:22:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for cookie endpoints: response shape with array, empty cookies, POST requires array, injected count, rejects non-array. 19 total.", "at": "2026-06-04T11:24:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-cookie-persistence: correct page.cookies/setCookie usage, array validation, no disk persistence, 5 contract tests. Approved.", "at": "2026-06-04T11:25:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed stealth mode — Chrome flags to evade AutomationControlled detection, disable-infobars. Opt-in via stealth param (default true) in session creation.", "at": "2026-06-04T11:28:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: 3 anti-detection Chrome flags in launcher.ts (default enabled), stealth option in LaunchOptions, passed from POST /v1/sessions body.", "at": "2026-06-04T11:34:00Z"},
-    {"persona": "tester", "action": "test", "description": "4 tests for stealth: defaults to enabled, can disable with false, LaunchOptions accepts it, session body passes it. 23 total.", "at": "2026-06-04T11:38:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-stealth-mode: correct Chrome flags, default enabled, opt-out pattern, 4 contract tests. Approved.", "at": "2026-06-04T11:40:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed Dockerfile — node:22-slim + apt chromium, pre-built dist, CHROME_PATH env, exposes port 3000. Single stage, production-ready.", "at": "2026-06-04T11:43:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Created Dockerfile (node:22-slim + chromium + font libs, CHROME_PATH, port 3000) and .dockerignore. Ready for docker build after npm run build.", "at": "2026-06-04T11:52:00Z"},
-    {"persona": "tester", "action": "test", "description": "10 tests for dockerfile: file exists, correct base image, chromium installed, CHROME_PATH set, port exposed, entrypoint correct, dockerignore exists/excludes, dist prereqs exist. 33 total.", "at": "2026-06-04T11:57:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-dockerfile: correct base image, chromium + fonts, CHROME_PATH, port 3000, lean .dockerignore, 10 tests. Approved.", "at": "2026-06-04T12:00:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed connection pooling — BrowserPool class with warm instances, acquire/release pattern, ANVIL_POOL_SIZE env, optional integration with SessionManager.", "at": "2026-06-04T12:03:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented BrowserPool in pool.ts (init/acquire/release/shutdown), integrated into SessionManager via constructor, ANVIL_POOL_SIZE env in api.ts, pool init before listen, shutdown on exit.", "at": "2026-06-04T12:12:00Z"},
-    {"persona": "tester", "action": "test", "description": "8 tests for pool: instantiation with default/custom size, starts empty, exports methods, SessionManager accepts pool, backward compat, env integration (0=disabled, >0=creates). 41 total.", "at": "2026-06-04T12:16:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-connection-pool: correct acquire/release pattern, Promise.allSettled for resilient init, backward-compatible SessionManager, env opt-in, 8 tests. Approved.", "at": "2026-06-04T12:18:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed authenticated proxy support — parse user:pass@host:port, store creds on BrowserProcess, page.authenticate() before navigation. Per-session proxy config.", "at": "2026-06-04T12:22:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing in launcher, ProxyCredentials on BrowserProcess, page.authenticate() in navigate/scrape/pdf endpoints. Handles user:pass@host:port.", "at": "2026-06-04T12:32:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for proxy: authenticated URL parsing, URL-decoded creds, non-auth proxy, bare host:port, ProxyCredentials on BrowserProcess. 46 total.", "at": "2026-06-04T12:35:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-proxy-support: correct URL parsing, creds stripped from flag, page.authenticate on all nav endpoints, no credential leakage, 5 tests. Approved.", "at": "2026-06-04T12:37:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed request interception — POST /v1/intercept with blockPatterns (substring URL matching), enable/disable toggle, blocks ads/analytics/trackers.", "at": "2026-06-04T12:40:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: enable/disable request interception, blockPatterns substring match, .catch() on abort/continue to prevent unhandled rejections. 12 endpoints.", "at": "2026-06-04T12:49:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for intercept: enable with patterns, disable, response shape, default empty patterns, substring matching logic. 51 total.", "at": "2026-06-04T12:54:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-request-interception: correct setRequestInterception, .catch safety, substring matching (no regex risk), 5 tests. Approved.", "at": "2026-06-04T12:56:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed HAR capture — POST /v1/har/start, POST /v1/har/stop, GET /v1/har. Simplified HAR entries (url, method, status, duration, size, timestamp). page.on('response') based.", "at": "2026-06-04T12:59:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: harStore Map per session, page.on('response') with timing+buffer size, 3 endpoints (start/stop/get). 15 endpoints total.", "at": "2026-06-04T13:08:00Z"},
-    {"persona": "tester", "action": "test", "description": "5 tests for HAR: start confirms recording, stop returns count, GET returns entries with all fields, correct types, empty when not started. 56 total.", "at": "2026-06-04T13:13:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-har-capture: correct response listener, defensive buffer read, per-session storage, 5 contract tests. Approved.", "at": "2026-06-04T13:15:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed file download handling — temp dir per session, Chrome download flag, CDP setDownloadBehavior, GET /v1/downloads (list) and GET /v1/downloads/:filename (binary retrieve), cleanup on destroy.", "at": "2026-06-03T17:00:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/scrape: navigate, waitForSelector, extract html/text", "at": "2026-06-04T10:12:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/pdf: optional URL, format, landscape, binary response", "at": "2026-06-04T11:01:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented GET/POST /v1/cookies: extract and inject cookies", "at": "2026-06-04T11:22:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented stealth mode: anti-detection Chrome flags, default enabled", "at": "2026-06-04T11:34:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Created Dockerfile + .dockerignore for containerized deployment", "at": "2026-06-04T11:52:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented BrowserPool: init/acquire/release/shutdown, ANVIL_POOL_SIZE env", "at": "2026-06-04T12:12:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing, ProxyCredentials, page.authenticate()", "at": "2026-06-04T12:32:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: blockPatterns substring match, enable/disable", "at": "2026-06-04T12:49:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: start/stop/get, per-session harStore, page.on('response')", "at": "2026-06-04T13:08:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented file download: per-session temp dir, Chrome --download-default-directory, GET /v1/downloads (list) + GET /v1/downloads/:filename (binary stream), path traversal protection, cleanup on destroy. 17 endpoints total.", "at": "2026-06-05T14:37:00Z"}
   ]
 }

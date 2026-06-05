@@ -1,4 +1,6 @@
 import { createServer } from "node:http";
+import { readdirSync, statSync, createReadStream } from "node:fs";
+import { join, basename } from "node:path";
 import { SessionManager } from "./session.js";
 import { createCdpProxy } from "./cdp-proxy.js";
 import { BrowserPool } from "./pool.js";
@@ -335,6 +337,55 @@ const server = createServer(async (req, res) => {
 
       res.writeHead(200, { "Content-Type": "image/png" });
       res.end(screenshot);
+      return;
+    }
+
+    // GET /v1/downloads — list files in session's download dir
+    if (method === "GET" && url.pathname === "/v1/downloads") {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const dir = session.browserProcess.downloadDir;
+      if (!dir) { json(res, 200, { files: [] }); return; }
+
+      try {
+        const entries = readdirSync(dir);
+        const files = entries.map((name) => {
+          const st = statSync(join(dir, name));
+          return { name, size: st.size, createdAt: st.birthtime.toISOString() };
+        });
+        json(res, 200, { files });
+      } catch {
+        json(res, 200, { files: [] });
+      }
+      return;
+    }
+
+    // GET /v1/downloads/:filename — retrieve a downloaded file
+    const downloadMatch = url.pathname.match(/^\/v1\/downloads\/(.+)$/);
+    if (method === "GET" && downloadMatch) {
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const dir = session.browserProcess.downloadDir;
+      if (!dir) { json(res, 404, { error: "No download directory" }); return; }
+
+      const filename = decodeURIComponent(downloadMatch[1]);
+      // Prevent path traversal
+      if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+        json(res, 400, { error: "Invalid filename" });
+        return;
+      }
+      const filePath = join(dir, basename(filename));
+      try {
+        const st = statSync(filePath);
+        res.writeHead(200, {
+          "Content-Type": "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Length": st.size.toString(),
+        });
+        createReadStream(filePath).pipe(res);
+      } catch {
+        json(res, 404, { error: "File not found" });
+      }
       return;
     }
 
