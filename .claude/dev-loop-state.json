@@ -5,15 +5,17 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-api-key-auth",
       "title": "API key authentication middleware",
       "completed_by": "builder",
-      "completed_at": "2026-06-05T15:00:00Z"
+      "completed_at": "2026-06-05T15:00:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-05T15:05:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -46,6 +48,7 @@
     {"persona": "tester", "action": "test", "description": "30 tests for page actions: click (selector/button/clickCount/defaults), type (selector/text/delay), select (values array/single/multi), hover (selector), wait (timeout default 10s), shared contract (5 endpoints, error format, withBrowser). 118 total.", "at": "2026-06-05T14:50:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-page-actions: correct selector validation, safe puppeteer delegation, withBrowser guarantees disconnect, proper defaults, 30 tests. Approved.", "at": "2026-06-05T14:52:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed API key authentication: ANVIL_API_KEY env var, Bearer token validation, 401 on failure, skip when unset (dev mode), exempt OPTIONS for CORS.", "at": "2026-06-05T14:53:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented API key auth: ANVIL_API_KEY env, Bearer token check before route matching, 401 on failure, skip when unset, OPTIONS exempt, startup log shows auth mode.", "at": "2026-06-05T15:00:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented API key auth: ANVIL_API_KEY env, Bearer token check before route matching, 401 on failure, skip when unset, OPTIONS exempt, startup log shows auth mode.", "at": "2026-06-05T15:00:00Z"},
+    {"persona": "tester", "action": "test", "description": "20 tests for API key auth: env var behavior (empty=disabled, set=enabled), header validation (Bearer format, wrong/missing/partial/correct), 401 response shape, OPTIONS exemption, dev mode passthrough, startup logging, check ordering. 138 total.", "at": "2026-06-05T15:05:00Z"}
   ]
 }
