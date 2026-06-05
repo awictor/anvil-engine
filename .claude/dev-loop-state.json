@@ -5,15 +5,17 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-session-targeting",
       "title": "Target specific sessions by ID via X-Session-Id header or query param",
       "completed_by": "builder",
-      "completed_at": "2026-06-05T15:20:00Z"
+      "completed_at": "2026-06-05T15:20:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-05T15:23:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -56,6 +58,7 @@
     {"persona": "tester", "action": "test", "description": "23 tests for session timeout: lastActivityAt field, touch() method (exists/no-throw on missing), startCleanup (0/negative/positive), stopCleanup (idempotent), env var defaults/overrides, session response shape (timeoutMs/idleMs/expiresAt), health response (sessionTimeoutMs), cleanup interval logic. 161 total.", "at": "2026-06-05T15:14:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-session-timeout: correct touch/cleanup logic, proper interval management, stopCleanup on shutdown, timeout info in responses, 23 tests. Note: || 300000 prevents env=0 from disabling — minor, non-blocking. Approved.", "at": "2026-06-05T15:16:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed multi-session targeting: X-Session-Id header or ?sessionId= query param, resolveSession() helper, 404 on missing explicit ID, backward-compat fallback to getActive(), touch targeted session.", "at": "2026-06-05T15:18:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented session targeting: resolveSession() helper (X-Session-Id header > ?sessionId param > getActive()), 404 on missing explicit ID vs 400 on no active. Replaced all 18 getActive() calls in endpoints. Touch targets resolved session. Health reports multiSession: true.", "at": "2026-06-05T15:20:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented session targeting: resolveSession() helper (X-Session-Id header > ?sessionId param > getActive()), 404 on missing explicit ID vs 400 on no active. Replaced all 18 getActive() calls in endpoints. Touch targets resolved session. Health reports multiSession: true.", "at": "2026-06-05T15:20:00Z"},
+    {"persona": "tester", "action": "test", "description": "19 tests for session targeting: X-Session-Id header resolution, ?sessionId query param, header precedence, fallback to getActive(), 404 vs 400 differentiation, resolveSession result type (discriminated union), 18 endpoints listed, touch on targeted, health multiSession, backward compat. 180 total.", "at": "2026-06-05T15:23:00Z"}
   ]
 }
