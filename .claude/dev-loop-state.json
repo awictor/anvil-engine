@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-page-actions",
-      "title": "Page interaction actions: click, type, select, hover, waitForSelector",
-      "completed_by": "builder",
-      "completed_at": "2026-06-05T14:45:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-05T14:50:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -26,7 +17,8 @@
     {"id": "feat-proxy-support", "title": "Proxy configuration per session"},
     {"id": "feat-request-interception", "title": "Request interception for blocking and modification"},
     {"id": "feat-har-capture", "title": "HAR network capture for session recording"},
-    {"id": "feat-file-download", "title": "File download handling with download directory and retrieval endpoint"}
+    {"id": "feat-file-download", "title": "File download handling with download directory and retrieval endpoint"},
+    {"id": "feat-page-actions", "title": "Page interaction actions: click, type, select, hover, waitForSelector"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -44,6 +36,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-file-download: correct path traversal defense (reject + basename), graceful error fallbacks, proper cleanup on destroy, Content-Disposition headers, 23 tests. Approved.", "at": "2026-06-05T14:42:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed page interaction actions: 5 new endpoints (click, type, select, hover, wait) using withBrowser helper, selector validation, optional params for button/delay/timeout.", "at": "2026-06-05T14:43:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented 5 page action endpoints: click (button/clickCount), type (text/delay), select (multi-value), hover, wait (timeout 10s default). All use withBrowser, validate selector, return {success, selector}. 22 endpoints total.", "at": "2026-06-05T14:45:00Z"},
-    {"persona": "tester", "action": "test", "description": "30 tests for page actions: click (selector/button/clickCount/defaults), type (selector/text/delay), select (values array/single/multi), hover (selector), wait (timeout default 10s), shared contract (5 endpoints, error format, withBrowser). 118 total.", "at": "2026-06-05T14:50:00Z"}
+    {"persona": "tester", "action": "test", "description": "30 tests for page actions: click (selector/button/clickCount/defaults), type (selector/text/delay), select (values array/single/multi), hover (selector), wait (timeout default 10s), shared contract (5 endpoints, error format, withBrowser). 118 total.", "at": "2026-06-05T14:50:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-page-actions: correct selector validation, safe puppeteer delegation, withBrowser guarantees disconnect, proper defaults, 30 tests. Approved.", "at": "2026-06-05T14:52:00Z"}
   ]
 }
