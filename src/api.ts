@@ -448,6 +448,10 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.script must be a non-empty string" });
         return;
       }
+      if (body.script.length > 100_000) {
+        json(res, 400, { error: "body.script exceeds 100KB limit" });
+        return;
+      }
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
@@ -585,10 +589,22 @@ function json(res: import("node:http").ServerResponse, status: number, data: unk
   res.end(JSON.stringify(data));
 }
 
+const MAX_BODY_BYTES = 1_048_576; // 1 MB
+
 function readBody(req: import("node:http").IncomingMessage): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c) => chunks.push(c));
+    let size = 0;
+    req.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks).toString()));
+    req.on("error", reject);
   });
 }
