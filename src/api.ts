@@ -42,9 +42,9 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  // Touch active session to reset idle timeout
-  const activeSession = sessionManager.getActive();
-  if (activeSession) sessionManager.touch(activeSession.id);
+  // Touch targeted/active session to reset idle timeout
+  const resolved = resolveSession(req, url);
+  if (resolved.session) sessionManager.touch(resolved.session.id);
 
   try {
     // POST /v1/sessions — create session
@@ -117,8 +117,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.url must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         if (session.browserProcess.proxyCredentials) {
@@ -139,8 +139,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.url must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         if (session.browserProcess.proxyCredentials) {
@@ -164,8 +164,8 @@ const server = createServer(async (req, res) => {
     // POST /v1/pdf — generate PDF
     if (method === "POST" && url.pathname === "/v1/pdf") {
       const body = JSON.parse(await readBody(req) || "{}");
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const puppeteer = await import("puppeteer-core");
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
@@ -193,8 +193,8 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/cookies — extract all cookies from active session
     if (method === "GET" && url.pathname === "/v1/cookies") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const puppeteer = await import("puppeteer-core");
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
@@ -210,8 +210,8 @@ const server = createServer(async (req, res) => {
     // POST /v1/cookies — inject cookies into active session
     if (method === "POST" && url.pathname === "/v1/cookies") {
       const body = JSON.parse(await readBody(req) || "{}");
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       if (!Array.isArray(body.cookies)) {
         json(res, 400, { error: "body.cookies must be an array" });
@@ -231,8 +231,8 @@ const server = createServer(async (req, res) => {
 
     // POST /v1/har/start — begin network recording
     if (method === "POST" && url.pathname === "/v1/har/start") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       harStore.set(session.id, []);
       const puppeteer = await import("puppeteer-core");
@@ -267,8 +267,8 @@ const server = createServer(async (req, res) => {
 
     // POST /v1/har/stop — stop network recording
     if (method === "POST" && url.pathname === "/v1/har/stop") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const entries = harStore.get(session.id) || [];
       json(res, 200, { recording: false, entries: entries.length });
@@ -277,8 +277,8 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/har — retrieve captured entries
     if (method === "GET" && url.pathname === "/v1/har") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const entries = harStore.get(session.id) || [];
       json(res, 200, { entries });
@@ -292,8 +292,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.enabled must be a boolean" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const puppeteer = await import("puppeteer-core");
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
@@ -327,8 +327,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.selector must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         await page.click(body.selector, {
@@ -351,8 +351,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.text must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         await page.type(body.selector, body.text, { delay: body.delay || 0 });
@@ -372,8 +372,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.values must be an array of strings" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const selected = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         return page.select(body.selector, ...body.values);
@@ -389,8 +389,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.selector must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         await page.hover(body.selector);
@@ -406,8 +406,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.selector must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         await page.waitForSelector(body.selector, { timeout: body.timeout || 10000 });
@@ -423,8 +423,8 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.script must be a non-empty string" });
         return;
       }
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const puppeteer = await import("puppeteer-core");
       const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
@@ -439,8 +439,8 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/screenshot
     if (method === "GET" && url.pathname === "/v1/screenshot") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const fullPage = url.searchParams.get("fullPage") === "true";
       const puppeteer = await import("puppeteer-core");
@@ -457,8 +457,8 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/downloads — list files in session's download dir
     if (method === "GET" && url.pathname === "/v1/downloads") {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
       const dir = session.browserProcess.downloadDir;
       if (!dir) { json(res, 200, { files: [] }); return; }
 
@@ -478,8 +478,8 @@ const server = createServer(async (req, res) => {
     // GET /v1/downloads/:filename — retrieve a downloaded file
     const downloadMatch = url.pathname.match(/^\/v1\/downloads\/(.+)$/);
     if (method === "GET" && downloadMatch) {
-      const session = sessionManager.getActive();
-      if (!session) { json(res, 400, { error: "No active session" }); return; }
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
       const dir = session.browserProcess.downloadDir;
       if (!dir) { json(res, 404, { error: "No download directory" }); return; }
 
@@ -506,7 +506,7 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/health
     if (method === "GET" && url.pathname === "/v1/health") {
-      json(res, 200, { status: "ok", sessions: sessionManager.size, uptime: process.uptime(), sessionTimeoutMs: SESSION_TIMEOUT });
+      json(res, 200, { status: "ok", sessions: sessionManager.size, uptime: process.uptime(), sessionTimeoutMs: SESSION_TIMEOUT, multiSession: true });
       return;
     }
 
@@ -549,6 +549,20 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 })();
 
 // Helpers
+type ResolveResult = { session: import("./session.js").Session; error?: never } | { session?: never; error: { status: number; body: { error: string } } };
+
+function resolveSession(req: import("node:http").IncomingMessage, url: URL): ResolveResult {
+  const explicitId = (req.headers["x-session-id"] as string) || url.searchParams.get("sessionId") || "";
+  if (explicitId) {
+    const session = sessionManager.get(explicitId);
+    if (!session) return { error: { status: 404, body: { error: "Session not found" } } };
+    return { session };
+  }
+  const session = sessionManager.getActive();
+  if (!session) return { error: { status: 400, body: { error: "No active session" } } };
+  return { session };
+}
+
 function json(res: import("node:http").ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));

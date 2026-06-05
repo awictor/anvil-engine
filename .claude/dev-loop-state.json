@@ -3,38 +3,16 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-session-targeting",
       "title": "Target specific sessions by ID via X-Session-Id header or query param",
-      "by": "architect",
-      "at": "2026-06-05T15:18:00Z",
-      "spec": {
-        "summary": "Allow callers to target a specific session (not just the first active one) via X-Session-Id header or ?sessionId= query param. Falls back to getActive() if neither provided. Enables parallel multi-session usage.",
-        "implementation_notes": [
-          "Extract session targeting logic into a helper: resolveSession(req, url, sessionManager)",
-          "Check X-Session-Id header first, then ?sessionId query param, then fall back to getActive()",
-          "Return 404 {error: 'Session not found'} if explicit ID is given but doesn't exist",
-          "Return 400 {error: 'No active session'} only when no ID provided and no active session",
-          "Replace all sessionManager.getActive() calls in action/browser endpoints with resolveSession()",
-          "Touch the resolved session (not just active) for timeout tracking",
-          "Document in health response: multiSession: true"
-        ],
-        "files_to_modify": ["src/api.ts"],
-        "acceptance_criteria": [
-          "X-Session-Id header targets a specific session",
-          "?sessionId= query param targets a specific session",
-          "Header takes precedence over query param",
-          "Missing session ID returns 404 with clear error",
-          "Without targeting, falls back to getActive() (backward compat)",
-          "All action endpoints support session targeting",
-          "Touch updates the targeted session's lastActivityAt"
-        ]
-      }
+      "completed_by": "builder",
+      "completed_at": "2026-06-05T15:20:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
@@ -77,6 +55,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented session timeout: lastActivityAt on Session, touch() on every request, startCleanup()/stopCleanup() with 30s interval, timeout info in GET /v1/sessions (timeoutMs/idleMs/expiresAt) and GET /v1/health (sessionTimeoutMs), ANVIL_SESSION_TIMEOUT_MS env (default 5min).", "at": "2026-06-05T15:10:00Z"},
     {"persona": "tester", "action": "test", "description": "23 tests for session timeout: lastActivityAt field, touch() method (exists/no-throw on missing), startCleanup (0/negative/positive), stopCleanup (idempotent), env var defaults/overrides, session response shape (timeoutMs/idleMs/expiresAt), health response (sessionTimeoutMs), cleanup interval logic. 161 total.", "at": "2026-06-05T15:14:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-session-timeout: correct touch/cleanup logic, proper interval management, stopCleanup on shutdown, timeout info in responses, 23 tests. Note: || 300000 prevents env=0 from disabling — minor, non-blocking. Approved.", "at": "2026-06-05T15:16:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed multi-session targeting: X-Session-Id header or ?sessionId= query param, resolveSession() helper, 404 on missing explicit ID, backward-compat fallback to getActive(), touch targeted session.", "at": "2026-06-05T15:18:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed multi-session targeting: X-Session-Id header or ?sessionId= query param, resolveSession() helper, 404 on missing explicit ID, backward-compat fallback to getActive(), touch targeted session.", "at": "2026-06-05T15:18:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented session targeting: resolveSession() helper (X-Session-Id header > ?sessionId param > getActive()), 404 on missing explicit ID vs 400 on no active. Replaced all 18 getActive() calls in endpoints. Touch targets resolved session. Health reports multiSession: true.", "at": "2026-06-05T15:20:00Z"}
   ]
 }
