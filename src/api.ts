@@ -301,6 +301,102 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // POST /v1/actions/click
+    if (method === "POST" && url.pathname === "/v1/actions/click") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        await page.click(body.selector, {
+          button: body.button || "left",
+          clickCount: body.clickCount || 1,
+        });
+      });
+      json(res, 200, { success: true, selector: body.selector });
+      return;
+    }
+
+    // POST /v1/actions/type
+    if (method === "POST" && url.pathname === "/v1/actions/type") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      if (!body.text || typeof body.text !== "string") {
+        json(res, 400, { error: "body.text must be a non-empty string" });
+        return;
+      }
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        await page.type(body.selector, body.text, { delay: body.delay || 0 });
+      });
+      json(res, 200, { success: true, selector: body.selector });
+      return;
+    }
+
+    // POST /v1/actions/select
+    if (method === "POST" && url.pathname === "/v1/actions/select") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      if (!Array.isArray(body.values)) {
+        json(res, 400, { error: "body.values must be an array of strings" });
+        return;
+      }
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      const selected = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        return page.select(body.selector, ...body.values);
+      });
+      json(res, 200, { success: true, selector: body.selector, selected });
+      return;
+    }
+
+    // POST /v1/actions/hover
+    if (method === "POST" && url.pathname === "/v1/actions/hover") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        await page.hover(body.selector);
+      });
+      json(res, 200, { success: true, selector: body.selector });
+      return;
+    }
+
+    // POST /v1/actions/wait
+    if (method === "POST" && url.pathname === "/v1/actions/wait") {
+      const body = JSON.parse(await readBody(req) || "{}");
+      if (!body.selector || typeof body.selector !== "string") {
+        json(res, 400, { error: "body.selector must be a non-empty string" });
+        return;
+      }
+      const session = sessionManager.getActive();
+      if (!session) { json(res, 400, { error: "No active session" }); return; }
+
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        await page.waitForSelector(body.selector, { timeout: body.timeout || 10000 });
+      });
+      json(res, 200, { success: true, selector: body.selector });
+      return;
+    }
+
     // POST /v1/actions/evaluate — run JS
     if (method === "POST" && url.pathname === "/v1/actions/evaluate") {
       const body = JSON.parse(await readBody(req) || "{}");
