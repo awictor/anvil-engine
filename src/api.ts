@@ -58,6 +58,17 @@ const server = createServer(async (req, res) => {
         proxy: options.proxyUrl,
         userDataDir: options.userDataDir,
         stealth: options.stealth,
+        userAgent: options.userAgent,
+      });
+
+      // Apply user-agent and viewport on initial page
+      const width = options.dimensions?.width || 1920;
+      const height = options.dimensions?.height || 1080;
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        if (options.userAgent) {
+          await page.setUserAgent(options.userAgent);
+        }
+        await page.setViewport({ width, height });
       });
 
       json(res, 201, {
@@ -66,6 +77,7 @@ const server = createServer(async (req, res) => {
         websocketUrl: `ws://localhost:${PORT}/cdp?session=${session.id}`,
         cdpPort: session.browserProcess.cdpPort,
         dimensions: { width: options.dimensions?.width || 1920, height: options.dimensions?.height || 1080 },
+        userAgent: session.options.userAgent || null,
         createdAt: new Date(session.createdAt).toISOString(),
       });
       return;
@@ -95,6 +107,27 @@ const server = createServer(async (req, res) => {
     // GET /v1/sessions/list — list all sessions
     if (method === "GET" && url.pathname === "/v1/sessions/list") {
       json(res, 200, { sessions: sessionManager.list(), count: sessionManager.size });
+      return;
+    }
+
+    // GET /v1/sessions/:id — get specific session details
+    const sessionDetailMatch = url.pathname.match(/^\/v1\/sessions\/([^/]+)$/);
+    if (method === "GET" && sessionDetailMatch && sessionDetailMatch[1] !== "list") {
+      const session = sessionManager.get(sessionDetailMatch[1]);
+      if (!session) { json(res, 404, { error: "Session not found" }); return; }
+      const idleMs = Date.now() - session.lastActivityAt;
+      json(res, 200, {
+        id: session.id,
+        status: session.status,
+        websocketUrl: `ws://localhost:${PORT}/cdp?session=${session.id}`,
+        cdpPort: session.browserProcess.cdpPort,
+        dimensions: { width: session.options.width || 1920, height: session.options.height || 1080 },
+        userAgent: session.options.userAgent || null,
+        createdAt: new Date(session.createdAt).toISOString(),
+        timeoutMs: SESSION_TIMEOUT,
+        idleMs,
+        expiresAt: SESSION_TIMEOUT > 0 ? new Date(session.lastActivityAt + SESSION_TIMEOUT).toISOString() : null,
+      });
       return;
     }
 

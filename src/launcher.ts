@@ -11,6 +11,7 @@ export interface LaunchOptions {
   userDataDir?: string;
   proxy?: string;
   stealth?: boolean;
+  userAgent?: string;
   args?: string[];
 }
 
