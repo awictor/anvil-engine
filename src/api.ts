@@ -8,6 +8,7 @@ import { withBrowser } from "./browser-helper.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
 const API_KEY = process.env.ANVIL_API_KEY || "";
+const SESSION_TIMEOUT = Number(process.env.ANVIL_SESSION_TIMEOUT_MS) || 300000;
 const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
@@ -41,6 +42,10 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Touch active session to reset idle timeout
+  const activeSession = sessionManager.getActive();
+  if (activeSession) sessionManager.touch(activeSession.id);
+
   try {
     // POST /v1/sessions — create session
     if (method === "POST" && url.pathname === "/v1/sessions") {
@@ -70,12 +75,16 @@ const server = createServer(async (req, res) => {
     if (method === "GET" && url.pathname === "/v1/sessions") {
       const active = sessionManager.getActive();
       if (active) {
+        const idleMs = Date.now() - active.lastActivityAt;
         json(res, 200, {
           id: active.id,
           status: active.status,
           websocketUrl: `ws://localhost:${PORT}/cdp?session=${active.id}`,
           cdpPort: active.browserProcess.cdpPort,
           createdAt: new Date(active.createdAt).toISOString(),
+          timeoutMs: SESSION_TIMEOUT,
+          idleMs,
+          expiresAt: SESSION_TIMEOUT > 0 ? new Date(active.lastActivityAt + SESSION_TIMEOUT).toISOString() : null,
         });
       } else {
         json(res, 200, { id: null, status: "idle" });
@@ -497,7 +506,7 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/health
     if (method === "GET" && url.pathname === "/v1/health") {
-      json(res, 200, { status: "ok", sessions: sessionManager.size, uptime: process.uptime() });
+      json(res, 200, { status: "ok", sessions: sessionManager.size, uptime: process.uptime(), sessionTimeoutMs: SESSION_TIMEOUT });
       return;
     }
 
@@ -515,6 +524,7 @@ createCdpProxy(server, sessionManager);
 // Graceful shutdown
 async function shutdown(signal: string) {
   process.stderr.write(`[anvil-engine] ${signal} — destroying ${sessionManager.size} sessions...\n`);
+  sessionManager.stopCleanup();
   await sessionManager.destroyAll();
   if (pool) await pool.shutdown();
   process.exit(0);
@@ -529,10 +539,12 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
     await pool.init();
     process.stderr.write(`[anvil-engine] Pool ready: ${pool.available} warm instances\n`);
   }
+  sessionManager.startCleanup(SESSION_TIMEOUT);
   server.listen(PORT, () => {
     process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
     process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
     process.stderr.write(`[anvil-engine] Auth: ${API_KEY ? "API key enabled" : "disabled (dev mode)"}\n`);
+    process.stderr.write(`[anvil-engine] Session timeout: ${SESSION_TIMEOUT > 0 ? `${SESSION_TIMEOUT}ms` : "disabled"}\n`);
   });
 })();
 

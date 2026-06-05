@@ -3,38 +3,16 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [
+  "backlog": [],
+  "in_progress": [],
+  "needs_tests": [
     {
       "id": "feat-session-timeout",
       "title": "Session timeout with auto-cleanup of idle sessions",
-      "by": "architect",
-      "at": "2026-06-05T15:08:00Z",
-      "spec": {
-        "summary": "Automatic cleanup of sessions that exceed a configurable idle timeout. Prevents memory leaks from orphaned Chrome processes in production.",
-        "implementation_notes": [
-          "Add ANVIL_SESSION_TIMEOUT_MS env var (default: 300000 = 5 minutes, 0 = disabled)",
-          "Track lastActivityAt timestamp on each Session (updated on every request that uses it)",
-          "Run a cleanup interval every 30 seconds that checks all sessions",
-          "If Date.now() - session.lastActivityAt > timeout, destroy the session automatically",
-          "Log cleanup: '[anvil-engine] Session <id> timed out after <ms>ms idle'",
-          "Add timeout info to GET /v1/sessions response: {timeoutMs, idleMs, expiresAt}",
-          "Add timeout info to GET /v1/health: {sessionTimeoutMs}",
-          "Clear the interval on graceful shutdown"
-        ],
-        "files_to_modify": ["src/session.ts", "src/api.ts"],
-        "acceptance_criteria": [
-          "Sessions are destroyed after ANVIL_SESSION_TIMEOUT_MS of inactivity",
-          "lastActivityAt is updated on session-using requests",
-          "Timeout of 0 disables auto-cleanup",
-          "Health endpoint reports configured timeout",
-          "Cleanup interval is cleared on shutdown",
-          "Timeout info visible in session response"
-        ]
-      }
+      "completed_by": "builder",
+      "completed_at": "2026-06-05T15:10:00Z"
     }
   ],
-  "in_progress": [],
-  "needs_tests": [],
   "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
@@ -72,6 +50,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented API key auth: ANVIL_API_KEY env, Bearer token check before route matching, 401 on failure, skip when unset, OPTIONS exempt, startup log shows auth mode.", "at": "2026-06-05T15:00:00Z"},
     {"persona": "tester", "action": "test", "description": "20 tests for API key auth: env var behavior (empty=disabled, set=enabled), header validation (Bearer format, wrong/missing/partial/correct), 401 response shape, OPTIONS exemption, dev mode passthrough, startup logging, check ordering. 138 total.", "at": "2026-06-05T15:05:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-api-key-auth: correct exact-match Bearer comparison, no key leakage in logs/responses, OPTIONS exempt, auth before routing, 20 tests. Timing side-channel noted but acceptable for internal use. Approved.", "at": "2026-06-05T15:07:00Z"},
-    {"persona": "architect", "action": "spec", "description": "Designed session timeout: ANVIL_SESSION_TIMEOUT_MS env (default 5min), lastActivityAt tracking, 30s cleanup interval, auto-destroy idle sessions, timeout info in health/session responses.", "at": "2026-06-05T15:08:00Z"}
+    {"persona": "architect", "action": "spec", "description": "Designed session timeout: ANVIL_SESSION_TIMEOUT_MS env (default 5min), lastActivityAt tracking, 30s cleanup interval, auto-destroy idle sessions, timeout info in health/session responses.", "at": "2026-06-05T15:08:00Z"},
+    {"persona": "builder", "action": "implement", "description": "Implemented session timeout: lastActivityAt on Session, touch() on every request, startCleanup()/stopCleanup() with 30s interval, timeout info in GET /v1/sessions (timeoutMs/idleMs/expiresAt) and GET /v1/health (sessionTimeoutMs), ANVIL_SESSION_TIMEOUT_MS env (default 5min).", "at": "2026-06-05T15:10:00Z"}
   ]
 }

@@ -8,6 +8,7 @@ export interface Session {
   status: "live" | "idle" | "released";
   browserProcess: BrowserProcess;
   createdAt: number;
+  lastActivityAt: number;
   options: LaunchOptions;
 }
 
@@ -25,11 +26,13 @@ export class SessionManager {
       ? await this.pool.acquire(options)
       : await launchBrowser(options);
 
+    const now = Date.now();
     const session: Session = {
       id,
       status: "live",
       browserProcess,
-      createdAt: Date.now(),
+      createdAt: now,
+      lastActivityAt: now,
       options,
     };
 
@@ -83,6 +86,34 @@ export class SessionManager {
       cdpPort: s.browserProcess.cdpPort,
       ageMs: Date.now() - s.createdAt,
     }));
+  }
+
+  touch(id: string): void {
+    const session = this.sessions.get(id);
+    if (session) session.lastActivityAt = Date.now();
+  }
+
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  startCleanup(timeoutMs: number): void {
+    if (timeoutMs <= 0) return;
+    this.cleanupTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [id, session] of this.sessions) {
+        const idleMs = now - session.lastActivityAt;
+        if (idleMs > timeoutMs) {
+          process.stderr.write(`[anvil-engine] Session ${id} timed out after ${idleMs}ms idle\n`);
+          this.destroy(id);
+        }
+      }
+    }, 30000);
+  }
+
+  stopCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 
   get size(): number {
