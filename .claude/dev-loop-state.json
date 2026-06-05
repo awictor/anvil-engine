@@ -3,7 +3,46 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-page-actions",
+      "title": "Page interaction actions: click, type, select, hover, waitForSelector",
+      "by": "architect",
+      "at": "2026-06-05T14:43:00Z",
+      "spec": {
+        "summary": "High-level page action endpoints that abstract common puppeteer interactions. POST /v1/actions/click, POST /v1/actions/type, POST /v1/actions/select, POST /v1/actions/hover, POST /v1/actions/wait.",
+        "endpoints": [
+          {"method": "POST", "path": "/v1/actions/click", "body": "{selector, button?, clickCount?}", "description": "Click an element by CSS selector"},
+          {"method": "POST", "path": "/v1/actions/type", "body": "{selector, text, delay?}", "description": "Type text into an input field"},
+          {"method": "POST", "path": "/v1/actions/select", "body": "{selector, values}", "description": "Select option(s) in a <select> element"},
+          {"method": "POST", "path": "/v1/actions/hover", "body": "{selector}", "description": "Hover over an element"},
+          {"method": "POST", "path": "/v1/actions/wait", "body": "{selector, timeout?}", "description": "Wait for a selector to appear in the DOM"}
+        ],
+        "implementation_notes": [
+          "All endpoints require active session (400 if none)",
+          "All endpoints validate selector is a non-empty string",
+          "Use withBrowser helper for safe connect/disconnect",
+          "click: page.click(selector, {button, clickCount})",
+          "type: page.type(selector, text, {delay})",
+          "select: page.select(selector, ...values)",
+          "hover: page.hover(selector)",
+          "wait: page.waitForSelector(selector, {timeout: timeout || 10000})",
+          "Return {success: true, selector} on success",
+          "Return 400 with error message if selector not found or timeout"
+        ],
+        "files_to_modify": ["src/api.ts"],
+        "acceptance_criteria": [
+          "5 new action endpoints all require active session",
+          "All validate selector as non-empty string",
+          "click supports optional button (left/right/middle) and clickCount",
+          "type supports optional delay between keystrokes",
+          "select accepts array of values to select",
+          "wait has configurable timeout (default 10s)",
+          "Descriptive error messages when element not found"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -32,6 +71,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: start/stop/get, per-session harStore, page.on('response')", "at": "2026-06-04T13:08:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented file download: per-session temp dir, Chrome --download-default-directory, GET /v1/downloads (list) + GET /v1/downloads/:filename (binary stream), path traversal protection, cleanup on destroy. 17 endpoints total.", "at": "2026-06-05T14:37:00Z"},
     {"persona": "tester", "action": "test", "description": "23 tests for file download: list/retrieve endpoint contracts, path traversal protection (reject .., /, \\), URI decoding, download dir lifecycle (create/list/cleanup/stat), BrowserProcess.downloadDir integration, Chrome flag format. 88 total.", "at": "2026-06-05T14:41:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-file-download: correct path traversal defense (reject + basename), graceful error fallbacks, proper cleanup on destroy, Content-Disposition headers, 23 tests. Approved.", "at": "2026-06-05T14:42:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-file-download: correct path traversal defense (reject + basename), graceful error fallbacks, proper cleanup on destroy, Content-Disposition headers, 23 tests. Approved.", "at": "2026-06-05T14:42:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed page interaction actions: 5 new endpoints (click, type, select, hover, wait) using withBrowser helper, selector validation, optional params for button/delay/timeout.", "at": "2026-06-05T14:43:00Z"}
   ]
 }
