@@ -3,7 +3,35 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-useragent-viewport",
+      "title": "Custom user-agent and viewport emulation per session",
+      "by": "architect",
+      "at": "2026-06-05T15:30:00Z",
+      "spec": {
+        "summary": "Allow callers to set custom user-agent string and device viewport on session creation. Applied via CDP on first page connect. Reported in GET /v1/sessions response.",
+        "implementation_notes": [
+          "Add userAgent?: string to LaunchOptions interface",
+          "Add userAgent to POST /v1/sessions body parsing (alongside existing dimensions/proxy/stealth)",
+          "In withBrowser helper or on first page creation, call page.setUserAgent(userAgent) if provided",
+          "Store userAgent on Session for later retrieval",
+          "Include userAgent in GET /v1/sessions response when set",
+          "Also apply page.setViewport({width, height}) using existing dimensions from LaunchOptions",
+          "Add GET /v1/sessions/:id endpoint to retrieve a specific session's config"
+        ],
+        "files_to_modify": ["src/launcher.ts", "src/session.ts", "src/api.ts"],
+        "acceptance_criteria": [
+          "POST /v1/sessions accepts userAgent in body",
+          "User-agent is applied to pages in that session",
+          "GET /v1/sessions shows userAgent when set",
+          "Viewport dimensions from session creation are applied",
+          "GET /v1/sessions/:id returns specific session details",
+          "Backward compatible — omitting userAgent keeps Chrome default"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -53,6 +81,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented session targeting: resolveSession() helper (X-Session-Id header > ?sessionId param > getActive()), 404 on missing explicit ID vs 400 on no active. Replaced all 18 getActive() calls in endpoints. Touch targets resolved session. Health reports multiSession: true.", "at": "2026-06-05T15:20:00Z"},
     {"persona": "tester", "action": "test", "description": "19 tests for session targeting: X-Session-Id header resolution, ?sessionId query param, header precedence, fallback to getActive(), 404 vs 400 differentiation, resolveSession result type (discriminated union), 18 endpoints listed, touch on targeted, health multiSession, backward compat. 180 total.", "at": "2026-06-05T15:23:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-session-targeting: correct priority (header > param > fallback), discriminated union type-safe, no injection risk (UUID Map lookup), 404/400 semantics correct, backward compat preserved, 19 tests. Approved.", "at": "2026-06-05T15:25:00Z"},
-    {"persona": "hardener", "action": "improve", "description": "Migrated 5 endpoints (pdf, cookies GET/POST, evaluate, screenshot) from raw puppeteer.connect to withBrowser helper — guarantees disconnect on error. Only HAR start + intercept remain raw (intentionally: persistent listeners).", "at": "2026-06-05T15:28:00Z"}
+    {"persona": "hardener", "action": "improve", "description": "Migrated 5 endpoints (pdf, cookies GET/POST, evaluate, screenshot) from raw puppeteer.connect to withBrowser helper — guarantees disconnect on error. Only HAR start + intercept remain raw (intentionally: persistent listeners).", "at": "2026-06-05T15:28:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed custom user-agent + viewport emulation per session: userAgent in LaunchOptions/body, page.setUserAgent on connect, page.setViewport for dimensions, GET /v1/sessions/:id for session details, reported in session response.", "at": "2026-06-05T15:30:00Z"}
   ]
 }
