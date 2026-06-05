@@ -167,25 +167,19 @@ const server = createServer(async (req, res) => {
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      if (session.browserProcess.proxyCredentials) {
-        await page.authenticate(session.browserProcess.proxyCredentials);
-      }
-
-      if (body.url) {
-        await page.goto(body.url, { waitUntil: "networkidle2" });
-      }
-
-      const pdf = await page.pdf({
-        format: body.format || "A4",
-        landscape: body.landscape || false,
-        printBackground: true,
+      const pdf = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        if (session.browserProcess.proxyCredentials) {
+          await page.authenticate(session.browserProcess.proxyCredentials);
+        }
+        if (body.url) {
+          await page.goto(body.url, { waitUntil: "networkidle2" });
+        }
+        return page.pdf({
+          format: body.format || "A4",
+          landscape: body.landscape || false,
+          printBackground: true,
+        });
       });
-      browser.disconnect();
-
       res.writeHead(200, { "Content-Type": "application/pdf" });
       res.end(pdf);
       return;
@@ -196,13 +190,9 @@ const server = createServer(async (req, res) => {
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      const cookies = await page.cookies();
-      browser.disconnect();
-
+      const cookies = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        return page.cookies();
+      });
       json(res, 200, { cookies });
       return;
     }
@@ -218,13 +208,9 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      await page.setCookie(...body.cookies);
-      browser.disconnect();
-
+      await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        await page.setCookie(...body.cookies);
+      });
       json(res, 200, { injected: body.cookies.length });
       return;
     }
@@ -426,13 +412,9 @@ const server = createServer(async (req, res) => {
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      const result = await page.evaluate(body.script);
-      browser.disconnect();
-
+      const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        return page.evaluate(body.script);
+      });
       json(res, 200, result);
       return;
     }
@@ -443,13 +425,9 @@ const server = createServer(async (req, res) => {
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       const fullPage = url.searchParams.get("fullPage") === "true";
-      const puppeteer = await import("puppeteer-core");
-      const browser = await puppeteer.default.connect({ browserWSEndpoint: session.browserProcess.wsEndpoint });
-      const pages = await browser.pages();
-      const page = pages[0] || await browser.newPage();
-      const screenshot = await page.screenshot({ fullPage, encoding: "binary" });
-      browser.disconnect();
-
+      const screenshot = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
+        return page.screenshot({ fullPage, encoding: "binary" });
+      });
       res.writeHead(200, { "Content-Type": "image/png" });
       res.end(screenshot);
       return;
