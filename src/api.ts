@@ -5,6 +5,7 @@ import { SessionManager } from "./session.js";
 import { createCdpProxy } from "./cdp-proxy.js";
 import { BrowserPool } from "./pool.js";
 import { withBrowser } from "./browser-helper.js";
+import { generateFingerprintScript } from "./fingerprint.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
 const API_KEY = process.env.ANVIL_API_KEY || "";
@@ -61,14 +62,18 @@ const server = createServer(async (req, res) => {
         userAgent: options.userAgent,
       });
 
-      // Apply user-agent and viewport on initial page
+      // Apply user-agent, viewport, and fingerprint on initial page
       const width = options.dimensions?.width || 1920;
       const height = options.dimensions?.height || 1080;
+      const stealthEnabled = options.stealth !== false;
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         if (options.userAgent) {
           await page.setUserAgent(options.userAgent);
         }
         await page.setViewport({ width, height });
+        if (stealthEnabled) {
+          await page.evaluateOnNewDocument(generateFingerprintScript(session.id));
+        }
       });
 
       json(res, 201, {
@@ -78,6 +83,7 @@ const server = createServer(async (req, res) => {
         cdpPort: session.browserProcess.cdpPort,
         dimensions: { width: options.dimensions?.width || 1920, height: options.dimensions?.height || 1080 },
         userAgent: session.options.userAgent || null,
+        fingerprint: stealthEnabled,
         createdAt: new Date(session.createdAt).toISOString(),
       });
       return;
