@@ -5,15 +5,17 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-file-download",
       "title": "File download handling with download directory and retrieval endpoint",
       "completed_by": "builder",
-      "completed_at": "2026-06-05T14:37:00Z"
+      "completed_at": "2026-06-05T14:37:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-05T14:41:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -36,6 +38,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented authenticated proxy: URL parsing, ProxyCredentials, page.authenticate()", "at": "2026-06-04T12:32:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/intercept: blockPatterns substring match, enable/disable", "at": "2026-06-04T12:49:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented HAR capture: start/stop/get, per-session harStore, page.on('response')", "at": "2026-06-04T13:08:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented file download: per-session temp dir, Chrome --download-default-directory, GET /v1/downloads (list) + GET /v1/downloads/:filename (binary stream), path traversal protection, cleanup on destroy. 17 endpoints total.", "at": "2026-06-05T14:37:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented file download: per-session temp dir, Chrome --download-default-directory, GET /v1/downloads (list) + GET /v1/downloads/:filename (binary stream), path traversal protection, cleanup on destroy. 17 endpoints total.", "at": "2026-06-05T14:37:00Z"},
+    {"persona": "tester", "action": "test", "description": "23 tests for file download: list/retrieve endpoint contracts, path traversal protection (reject .., /, \\), URI decoding, download dir lifecycle (create/list/cleanup/stat), BrowserProcess.downloadDir integration, Chrome flag format. 88 total.", "at": "2026-06-05T14:41:00Z"}
   ]
 }
