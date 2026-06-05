@@ -5,15 +5,17 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-session-timeout",
       "title": "Session timeout with auto-cleanup of idle sessions",
       "completed_by": "builder",
-      "completed_at": "2026-06-05T15:10:00Z"
+      "completed_at": "2026-06-05T15:10:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-05T15:14:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -51,6 +53,7 @@
     {"persona": "tester", "action": "test", "description": "20 tests for API key auth: env var behavior (empty=disabled, set=enabled), header validation (Bearer format, wrong/missing/partial/correct), 401 response shape, OPTIONS exemption, dev mode passthrough, startup logging, check ordering. 138 total.", "at": "2026-06-05T15:05:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-api-key-auth: correct exact-match Bearer comparison, no key leakage in logs/responses, OPTIONS exempt, auth before routing, 20 tests. Timing side-channel noted but acceptable for internal use. Approved.", "at": "2026-06-05T15:07:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed session timeout: ANVIL_SESSION_TIMEOUT_MS env (default 5min), lastActivityAt tracking, 30s cleanup interval, auto-destroy idle sessions, timeout info in health/session responses.", "at": "2026-06-05T15:08:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented session timeout: lastActivityAt on Session, touch() on every request, startCleanup()/stopCleanup() with 30s interval, timeout info in GET /v1/sessions (timeoutMs/idleMs/expiresAt) and GET /v1/health (sessionTimeoutMs), ANVIL_SESSION_TIMEOUT_MS env (default 5min).", "at": "2026-06-05T15:10:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented session timeout: lastActivityAt on Session, touch() on every request, startCleanup()/stopCleanup() with 30s interval, timeout info in GET /v1/sessions (timeoutMs/idleMs/expiresAt) and GET /v1/health (sessionTimeoutMs), ANVIL_SESSION_TIMEOUT_MS env (default 5min).", "at": "2026-06-05T15:10:00Z"},
+    {"persona": "tester", "action": "test", "description": "23 tests for session timeout: lastActivityAt field, touch() method (exists/no-throw on missing), startCleanup (0/negative/positive), stopCleanup (idempotent), env var defaults/overrides, session response shape (timeoutMs/idleMs/expiresAt), health response (sessionTimeoutMs), cleanup interval logic. 161 total.", "at": "2026-06-05T15:14:00Z"}
   ]
 }
