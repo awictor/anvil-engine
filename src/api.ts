@@ -26,8 +26,15 @@ interface HarEntry {
 const harStore = new Map<string, HarEntry[]>();
 
 const server = createServer(async (req, res) => {
+  const startTime = Date.now();
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
   const method = req.method || "GET";
+
+  res.on("finish", () => {
+    if (method !== "OPTIONS") {
+      process.stderr.write(`[anvil-engine] ${method} ${url.pathname} ${res.statusCode} ${Date.now() - startTime}ms\n`);
+    }
+  });
 
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
