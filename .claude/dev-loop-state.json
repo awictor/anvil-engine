@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-file-upload",
-      "title": "File upload handling for form file inputs",
-      "completed_by": "builder",
-      "completed_at": "2026-06-05T16:02:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-05T16:06:00Z"
-    }
-  ],
+  "needs_review": [],
   "needs_review": [],
   "needs_review": [],
   "done": [
@@ -34,7 +25,8 @@
     {"id": "feat-session-timeout", "title": "Session timeout with auto-cleanup of idle sessions"},
     {"id": "feat-session-targeting", "title": "Target specific sessions by ID via X-Session-Id header or query param"},
     {"id": "feat-useragent-viewport", "title": "Custom user-agent and viewport emulation per session"},
-    {"id": "feat-fingerprint-randomization", "title": "Browser fingerprint randomization for advanced anti-detection"}
+    {"id": "feat-fingerprint-randomization", "title": "Browser fingerprint randomization for advanced anti-detection"},
+    {"id": "feat-file-upload", "title": "File upload handling for form file inputs"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -78,6 +70,7 @@
     {"persona": "security", "action": "harden", "description": "Added request body size limit (1MB) in readBody() — prevents memory exhaustion from oversized payloads. Added 100KB script size cap on /v1/actions/evaluate. req.destroy() on overflow.", "at": "2026-06-05T15:48:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed file upload: POST /v1/actions/upload with selector + filename + base64 data. Write to temp, page.uploadFile(), cleanup after. 10MB data limit, path traversal rejection, reuses session downloadDir.", "at": "2026-06-05T16:00:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/actions/upload: validate selector/filename/data, reject path traversal, decode base64, enforce 10MB limit, write temp file to downloadDir, page.$(selector).uploadFile(), cleanup in finally block. 24 endpoints total.", "at": "2026-06-05T16:02:00Z"},
-    {"persona": "tester", "action": "test", "description": "19 tests for file upload: input validation (selector/filename/data/session), path traversal protection (../slash/backslash/safe names), base64 decode + 10MB limit, temp file handling (basename/finally cleanup/no-dir error), success response shape, element-not-found error, request body contract. 242 total.", "at": "2026-06-05T16:06:00Z"}
+    {"persona": "tester", "action": "test", "description": "19 tests for file upload: input validation (selector/filename/data/session), path traversal protection (../slash/backslash/safe names), base64 decode + 10MB limit, temp file handling (basename/finally cleanup/no-dir error), success response shape, element-not-found error, request body contract. 242 total.", "at": "2026-06-05T16:06:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-file-upload: correct path traversal defense + basename, base64 decode before size check, withBrowser for safe disconnect, finally cleanup of temp file, 10MB limit, 19 tests. Approved.", "at": "2026-06-08T09:00:00Z"}
   ]
 }
