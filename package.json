@@ -5,9 +5,16 @@
   "type": "module",
   "main": "dist/api.js",
   "exports": {
-    ".": "./dist/api.js",
-    "./client": "./dist/client.js"
+    ".": {
+      "types": "./dist/api.d.ts",
+      "default": "./dist/api.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    }
   },
+  "types": "dist/client.d.ts",
   "scripts": {
     "build": "tsc",
     "start": "node dist/api.js",
