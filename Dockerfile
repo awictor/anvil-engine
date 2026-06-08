@@ -14,6 +14,8 @@ RUN apt-get update && \
 
 # Set Chrome path for launcher auto-discovery
 ENV CHROME_PATH=/usr/bin/chromium
+ENV ANVIL_ENGINE_PORT=3000
+ENV ANVIL_HOST=0.0.0.0
 
 WORKDIR /app
 
@@ -25,5 +27,8 @@ RUN npm ci --omit=dev
 COPY dist/ ./dist/
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
+  CMD node -e "fetch('http://localhost:3000/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
 CMD ["node", "dist/api.js"]
