@@ -53,15 +53,18 @@ describe("integration: module dependency graph", () => {
   });
 
   it("no circular imports (all modules load independently)", async () => {
-    // If there were circular imports, these would hang or throw
     const results = await Promise.all([
       import("../src/session.js"),
       import("../src/pool.js"),
       import("../src/launcher.js"),
       import("../src/browser-helper.js"),
       import("../src/cdp-proxy.js"),
+      import("../src/fingerprint.js"),
+      import("../src/webhooks.js"),
+      import("../src/rate-limiter.js"),
+      import("../src/client.js"),
     ]);
-    expect(results).toHaveLength(5);
+    expect(results).toHaveLength(9);
   });
 });
 
@@ -85,10 +88,13 @@ describe("integration: API endpoint contract consistency", () => {
       "POST /v1/har/start",
       "POST /v1/har/stop",
       "GET /v1/har",
+      "POST /v1/recording/start",
+      "POST /v1/recording/stop",
+      "GET /v1/recording",
       "GET /v1/downloads",
       "GET /v1/downloads/:filename",
     ];
-    expect(sessionRequiredEndpoints).toHaveLength(19);
+    expect(sessionRequiredEndpoints).toHaveLength(22);
   });
 
   it("session lifecycle endpoints exist", () => {
@@ -102,7 +108,7 @@ describe("integration: API endpoint contract consistency", () => {
     expect(lifecycleEndpoints).toHaveLength(5);
   });
 
-  it("total endpoint count is 24", () => {
+  it("total endpoint count is 29", () => {
     const allEndpoints = [
       "POST /v1/sessions", "GET /v1/sessions", "GET /v1/sessions/:id",
       "GET /v1/sessions/list", "POST /v1/sessions/:id/release",
@@ -112,11 +118,12 @@ describe("integration: API endpoint contract consistency", () => {
       "POST /v1/scrape", "POST /v1/pdf", "GET /v1/screenshot",
       "GET /v1/cookies", "POST /v1/cookies",
       "POST /v1/har/start", "POST /v1/har/stop", "GET /v1/har",
+      "POST /v1/recording/start", "POST /v1/recording/stop", "GET /v1/recording",
       "POST /v1/intercept",
       "GET /v1/downloads", "GET /v1/downloads/:filename",
-      "GET /v1/health",
+      "GET /v1/health", "GET /v1/metrics",
     ];
-    expect(allEndpoints).toHaveLength(25);
+    expect(allEndpoints).toHaveLength(29);
   });
 });
 
