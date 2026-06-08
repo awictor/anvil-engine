@@ -91,17 +91,19 @@ describe("anvil-engine SDK client", () => {
   });
 
   describe("method count verification", () => {
-    it("has exactly 24 API methods (matching 24 endpoints)", () => {
+    it("has exactly 30 API methods (matching 30 endpoints)", () => {
       const client = new AnvilClient({ baseUrl: "http://localhost:3000" });
       const methods = [
         "createSession", "getSession", "getSessionById", "listSessions", "releaseSession", "health",
         "navigate", "click", "type", "select", "hover", "waitForSelector", "evaluate", "upload",
         "scrape", "pdf", "screenshot", "getCookies", "setCookies",
         "startHar", "stopHar", "getHar", "intercept",
+        "startRecording", "stopRecording", "getRecording",
         "listDownloads", "getDownload",
+        "metrics", "docs",
       ];
       methods.forEach(m => expect(typeof (client as any)[m]).toBe("function"));
-      expect(methods.length).toBe(25); // 24 endpoints + getSessionById
+      expect(methods.length).toBe(30);
     });
   });
 
