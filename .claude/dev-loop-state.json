@@ -38,6 +38,7 @@
     {"persona": "reliability", "action": "improve", "description": "Improved withBrowser: clear error message on connection failure ('session may have crashed'), try/catch on disconnect (ignore if already dead). Prevents cryptic WebSocket errors from reaching clients.", "at": "2026-06-08T10:12:00Z"},
     {"persona": "integration", "action": "test", "description": "Updated integration tests: endpoint count 25->29 (added recording 3 + metrics), session-required 19->22 (added recording), dependency graph expanded to 9 modules (added fingerprint/webhooks/rate-limiter/client). 357 total.", "at": "2026-06-08T10:15:00Z"},
     {"persona": "security", "action": "harden", "description": "Validated userDataDir on session creation: rejects path traversal (..) and control characters (\\r\\n\\0). Prevents Chrome writing data to sensitive system directories via malicious userDataDir param.", "at": "2026-06-08T10:17:00Z"},
-    {"persona": "refactor", "action": "improve", "description": "Cleaned up package.json: removed unused fastify dependency, added 'start' script (node dist/api.js). Reduces install size and provides standard production start command.", "at": "2026-06-08T10:19:00Z"}
+    {"persona": "refactor", "action": "improve", "description": "Cleaned up package.json: removed unused fastify dependency, added 'start' script (node dist/api.js). Reduces install size and provides standard production start command.", "at": "2026-06-08T10:19:00Z"},
+    {"persona": "hardener", "action": "improve", "description": "Added ANVIL_HOST env var (default 0.0.0.0) for bind address control. Operators can set to 127.0.0.1 for local-only access. Startup log shows actual bind address. 8 env vars total.", "at": "2026-06-08T10:21:00Z"}
   ]
 }

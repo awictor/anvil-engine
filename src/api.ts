@@ -10,6 +10,7 @@ import { fireWebhook } from "./webhooks.js";
 import { RateLimiter } from "./rate-limiter.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
+const HOST = process.env.ANVIL_HOST || "0.0.0.0";
 const API_KEY = process.env.ANVIL_API_KEY || "";
 const SESSION_TIMEOUT = Number(process.env.ANVIL_SESSION_TIMEOUT_MS) || 300000;
 const RATE_LIMIT_RPM = Number(process.env.ANVIL_RATE_LIMIT_RPM) || 0;
@@ -698,9 +699,9 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
   }
   sessionManager.startCleanup(SESSION_TIMEOUT);
   if (rateLimiter) rateLimiter.startCleanup();
-  server.listen(PORT, () => {
-    process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
-    process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
+  server.listen(PORT, HOST, () => {
+    process.stderr.write(`[anvil-engine] Running on http://${HOST}:${PORT}\n`);
+    process.stderr.write(`[anvil-engine] CDP proxy on ws://${HOST}:${PORT}/cdp\n`);
     process.stderr.write(`[anvil-engine] Auth: ${API_KEY ? "API key enabled" : "disabled (dev mode)"}\n`);
     process.stderr.write(`[anvil-engine] Session timeout: ${SESSION_TIMEOUT > 0 ? `${SESSION_TIMEOUT}ms` : "disabled"}\n`);
   });
