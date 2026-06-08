@@ -67,10 +67,15 @@ describe("integration: module dependency graph", () => {
 
 describe("integration: API endpoint contract consistency", () => {
   it("all endpoints that modify browser require active session", () => {
-    // Document the contract: these endpoints return 400 without session
     const sessionRequiredEndpoints = [
       "POST /v1/actions/navigate",
       "POST /v1/actions/evaluate",
+      "POST /v1/actions/click",
+      "POST /v1/actions/type",
+      "POST /v1/actions/select",
+      "POST /v1/actions/hover",
+      "POST /v1/actions/wait",
+      "POST /v1/actions/upload",
       "POST /v1/scrape",
       "POST /v1/pdf",
       "GET /v1/screenshot",
@@ -80,17 +85,56 @@ describe("integration: API endpoint contract consistency", () => {
       "POST /v1/har/start",
       "POST /v1/har/stop",
       "GET /v1/har",
+      "GET /v1/downloads",
+      "GET /v1/downloads/:filename",
     ];
-    expect(sessionRequiredEndpoints).toHaveLength(11);
+    expect(sessionRequiredEndpoints).toHaveLength(19);
   });
 
   it("session lifecycle endpoints exist", () => {
     const lifecycleEndpoints = [
       "POST /v1/sessions",
       "GET /v1/sessions",
+      "GET /v1/sessions/:id",
       "GET /v1/sessions/list",
       "POST /v1/sessions/:id/release",
     ];
-    expect(lifecycleEndpoints).toHaveLength(4);
+    expect(lifecycleEndpoints).toHaveLength(5);
+  });
+
+  it("total endpoint count is 24", () => {
+    const allEndpoints = [
+      "POST /v1/sessions", "GET /v1/sessions", "GET /v1/sessions/:id",
+      "GET /v1/sessions/list", "POST /v1/sessions/:id/release",
+      "POST /v1/actions/navigate", "POST /v1/actions/click", "POST /v1/actions/type",
+      "POST /v1/actions/select", "POST /v1/actions/hover", "POST /v1/actions/wait",
+      "POST /v1/actions/evaluate", "POST /v1/actions/upload",
+      "POST /v1/scrape", "POST /v1/pdf", "GET /v1/screenshot",
+      "GET /v1/cookies", "POST /v1/cookies",
+      "POST /v1/har/start", "POST /v1/har/stop", "GET /v1/har",
+      "POST /v1/intercept",
+      "GET /v1/downloads", "GET /v1/downloads/:filename",
+      "GET /v1/health",
+    ];
+    expect(allEndpoints).toHaveLength(25);
+  });
+});
+
+describe("integration: client SDK module", () => {
+  it("client.ts exports AnvilClient class", async () => {
+    const mod = await import("../src/client.js");
+    expect(mod.AnvilClient).toBeDefined();
+    expect(typeof mod.AnvilClient).toBe("function");
+  });
+
+  it("AnvilClient can be instantiated", async () => {
+    const { AnvilClient } = await import("../src/client.js");
+    const client = new AnvilClient({ baseUrl: "http://localhost:3000" });
+    expect(client).toBeInstanceOf(AnvilClient);
+  });
+
+  it("fingerprint.ts exports generateFingerprintScript", async () => {
+    const mod = await import("../src/fingerprint.js");
+    expect(typeof mod.generateFingerprintScript).toBe("function");
   });
 });
