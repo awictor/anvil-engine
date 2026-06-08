@@ -434,7 +434,7 @@ const server = createServer(async (req, res) => {
       const page = pages[0] || await browser.newPage();
 
       if (body.enabled) {
-        const blockPatterns: string[] = body.blockPatterns || [];
+        const blockPatterns: string[] = (body.blockPatterns || []).filter((p: unknown) => typeof p === "string" && p.length > 0);
         await page.setRequestInterception(true);
         page.on("request", (req) => {
           if (blockPatterns.some((p) => req.url().includes(p))) {
