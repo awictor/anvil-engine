@@ -3,7 +3,36 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-metrics-endpoint",
+      "title": "GET /v1/metrics — operational metrics for monitoring",
+      "by": "architect",
+      "at": "2026-06-08T09:48:00Z",
+      "spec": {
+        "summary": "A metrics endpoint that reports operational counters for monitoring dashboards: total sessions created, total released, active count, peak concurrent, average duration, requests served, errors count.",
+        "implementation_notes": [
+          "Create a simple in-memory metrics counter object (no external deps)",
+          "Track: sessionsCreated, sessionsReleased, sessionsTimedOut, peakConcurrent, requestsServed, errorsCount",
+          "Increment sessionsCreated on POST /v1/sessions success",
+          "Increment sessionsReleased on release, sessionsTimedOut on timeout cleanup",
+          "Update peakConcurrent = max(peakConcurrent, sessionManager.size) on create",
+          "Increment requestsServed on every non-OPTIONS request",
+          "Increment errorsCount on every 4xx/5xx response",
+          "GET /v1/metrics returns all counters + current active sessions + uptime",
+          "Exempt from rate limiting (like health)"
+        ],
+        "files_to_modify": ["src/api.ts"],
+        "acceptance_criteria": [
+          "GET /v1/metrics returns JSON with all counter fields",
+          "Counters increment correctly on events",
+          "peakConcurrent tracks highest watermark",
+          "Exempt from rate limiting and auth (observability must always be accessible)",
+          "requestsServed counts all requests (including metrics itself)"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -94,6 +123,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented rate limiting in src/rate-limiter.ts: RateLimiter class with token bucket (refill at rpm/60/s, burst=rpm), consume(clientId) returns allowed+retryAfterSec. Integrated before auth, per-IP (X-Forwarded-For), 429+Retry-After, health exempt, cleanup start/stop on init/shutdown.", "at": "2026-06-08T09:38:00Z"},
     {"persona": "tester", "action": "test", "description": "22 tests for rate limiting: RateLimiter class (construct/consume/allow/reject/retryAfterSec), per-client isolation, token refill (burst=rpm, rate=rpm/60), startCleanup/stopCleanup (idempotent, stale threshold), env var (0=null), 429 response (error msg/Retry-After/health exempt), IP resolution (XFF/remote/unknown). 318 total.", "at": "2026-06-08T09:40:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-rate-limiting: correct token bucket algorithm, refill + burst math, per-IP isolation, health exempt, null when disabled (zero perf cost), cleanup prevents memory leak, 22 tests. Approved.", "at": "2026-06-08T09:42:00Z"},
-    {"persona": "security", "action": "harden", "description": "Fixed HTTP header injection via filenames: added \\r\\n\\0 rejection to both download and upload filename validation. Prevents Content-Disposition header injection through crafted filenames with newlines.", "at": "2026-06-08T09:45:00Z"}
+    {"persona": "security", "action": "harden", "description": "Fixed HTTP header injection via filenames: added \\r\\n\\0 rejection to both download and upload filename validation. Prevents Content-Disposition header injection through crafted filenames with newlines.", "at": "2026-06-08T09:45:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed GET /v1/metrics: in-memory counters (sessionsCreated/released/timedOut, peakConcurrent, requestsServed, errorsCount), exempt from auth+rate-limit, incremented at event points.", "at": "2026-06-08T09:48:00Z"}
   ]
 }
