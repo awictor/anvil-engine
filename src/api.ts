@@ -486,7 +486,7 @@ const server = createServer(async (req, res) => {
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
-        await page.type(body.selector, body.text, { delay: body.delay || 0 });
+        await page.type(body.selector, body.text, { delay: Math.min(body.delay || 0, 500) });
       });
       json(res, 200, { success: true, selector: body.selector });
       return;
@@ -541,7 +541,7 @@ const server = createServer(async (req, res) => {
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
-        await page.waitForSelector(body.selector, { timeout: body.timeout || 10000 });
+        await page.waitForSelector(body.selector, { timeout: Math.min(body.timeout || 10000, 60000) });
       });
       json(res, 200, { success: true, selector: body.selector });
       return;
