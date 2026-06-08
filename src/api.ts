@@ -14,6 +14,7 @@ const HOST = process.env.ANVIL_HOST || "0.0.0.0";
 const API_KEY = process.env.ANVIL_API_KEY || "";
 const SESSION_TIMEOUT = Number(process.env.ANVIL_SESSION_TIMEOUT_MS) || 300000;
 const RATE_LIMIT_RPM = Number(process.env.ANVIL_RATE_LIMIT_RPM) || 0;
+const MAX_SESSIONS = Number(process.env.ANVIL_MAX_SESSIONS) || 10;
 const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
@@ -102,6 +103,10 @@ const server = createServer(async (req, res) => {
       const options = body ? JSON.parse(body) : {};
       if (options.userDataDir && (options.userDataDir.includes("..") || /[\r\n\0]/.test(options.userDataDir))) {
         json(res, 400, { error: "Invalid userDataDir" });
+        return;
+      }
+      if (sessionManager.size >= MAX_SESSIONS) {
+        json(res, 503, { error: `Max sessions reached (${MAX_SESSIONS})` });
         return;
       }
       const session = await sessionManager.create({
