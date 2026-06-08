@@ -580,7 +580,10 @@ const server = createServer(async (req, res) => {
     json(res, 404, { error: "Not found" });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    json(res, 500, { error: message });
+    const status = message.includes("too large") ? 413
+      : message.includes("not found") || message.includes("Not found") ? 404
+      : 500;
+    json(res, status, { error: message });
   }
 });
 
