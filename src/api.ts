@@ -7,13 +7,16 @@ import { BrowserPool } from "./pool.js";
 import { withBrowser } from "./browser-helper.js";
 import { generateFingerprintScript } from "./fingerprint.js";
 import { fireWebhook } from "./webhooks.js";
+import { RateLimiter } from "./rate-limiter.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
 const API_KEY = process.env.ANVIL_API_KEY || "";
 const SESSION_TIMEOUT = Number(process.env.ANVIL_SESSION_TIMEOUT_MS) || 300000;
+const RATE_LIMIT_RPM = Number(process.env.ANVIL_RATE_LIMIT_RPM) || 0;
 const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
+const rateLimiter = RATE_LIMIT_RPM > 0 ? new RateLimiter(RATE_LIMIT_RPM) : null;
 
 interface HarEntry {
   url: string;
@@ -41,6 +44,17 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+  // Rate limiting (exempt health endpoint)
+  if (rateLimiter && url.pathname !== "/v1/health") {
+    const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+    const { allowed, retryAfterSec } = rateLimiter.consume(clientIp);
+    if (!allowed) {
+      res.setHeader("Retry-After", String(retryAfterSec));
+      json(res, 429, { error: "Rate limit exceeded" });
+      return;
+    }
+  }
 
   // API key authentication
   if (API_KEY) {
@@ -604,6 +618,7 @@ createCdpProxy(server, sessionManager);
 async function shutdown(signal: string) {
   process.stderr.write(`[anvil-engine] ${signal} — destroying ${sessionManager.size} sessions...\n`);
   sessionManager.stopCleanup();
+  if (rateLimiter) rateLimiter.stopCleanup();
   await sessionManager.destroyAll();
   if (pool) await pool.shutdown();
   process.exit(0);
@@ -619,6 +634,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.stderr.write(`[anvil-engine] Pool ready: ${pool.available} warm instances\n`);
   }
   sessionManager.startCleanup(SESSION_TIMEOUT);
+  if (rateLimiter) rateLimiter.startCleanup();
   server.listen(PORT, () => {
     process.stderr.write(`[anvil-engine] Running on http://localhost:${PORT}\n`);
     process.stderr.write(`[anvil-engine] CDP proxy on ws://localhost:${PORT}/cdp\n`);
