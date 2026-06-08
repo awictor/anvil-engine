@@ -476,7 +476,7 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.filename must be a non-empty string" });
         return;
       }
-      if (body.filename.includes("..") || body.filename.includes("/") || body.filename.includes("\\")) {
+      if (body.filename.includes("..") || body.filename.includes("/") || body.filename.includes("\\") || /[\r\n\0]/.test(body.filename)) {
         json(res, 400, { error: "Invalid filename" });
         return;
       }
@@ -574,8 +574,8 @@ const server = createServer(async (req, res) => {
       if (!dir) { json(res, 404, { error: "No download directory" }); return; }
 
       const filename = decodeURIComponent(downloadMatch[1]);
-      // Prevent path traversal
-      if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+      // Prevent path traversal and header injection
+      if (filename.includes("..") || filename.includes("/") || filename.includes("\\") || /[\r\n\0]/.test(filename)) {
         json(res, 400, { error: "Invalid filename" });
         return;
       }
