@@ -3,7 +3,35 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-action-recording",
+      "title": "Session action recording and replay",
+      "by": "architect",
+      "at": "2026-06-08T10:00:00Z",
+      "spec": {
+        "summary": "Record all actions performed during a session (navigate, click, type, etc.) and expose them via GET /v1/recording. Enables workflow replay and debugging.",
+        "implementation_notes": [
+          "Add a recordingStore Map<sessionId, ActionEntry[]> (like harStore)",
+          "ActionEntry: {action, params, timestamp, durationMs}",
+          "Record in each action endpoint: push entry after action completes with timing",
+          "POST /v1/recording/start — enable recording for session (default: auto-enabled on session create)",
+          "POST /v1/recording/stop — stop recording",
+          "GET /v1/recording — retrieve recorded actions for session",
+          "Include action name (navigate/click/type/select/hover/wait/evaluate/upload/scrape) and full params",
+          "Store timing (start→end ms) for each action for replay speed"
+        ],
+        "files_to_modify": ["src/api.ts"],
+        "acceptance_criteria": [
+          "Actions are recorded with name, params, timestamp, durationMs",
+          "GET /v1/recording returns recorded actions array",
+          "POST /v1/recording/stop stops recording",
+          "POST /v1/recording/start enables recording",
+          "Recording is per-session (uses resolveSession)"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -96,6 +124,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/metrics: in-memory counters (sessionsCreated/released, peakConcurrent, requestsServed, errorsCount), incremented on finish/create/release. Exempt from auth+rate-limit. Returns counters + activeSessions + uptime. 26 endpoints total.", "at": "2026-06-08T09:50:00Z"},
     {"persona": "tester", "action": "test", "description": "19 tests for metrics: response shape (7 fields), counter increment logic (OPTIONS excluded, 4xx/5xx errors, peakConcurrent max/never-decrease), auth+rate-limit exemption (metrics+health), initial state (all zero). 337 total.", "at": "2026-06-08T09:52:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-metrics-endpoint: correct counter increments, Math.max watermark, no sensitive data exposed, dual exemption (auth+rate-limit), 19 tests. Approved.", "at": "2026-06-08T09:54:00Z"},
-    {"persona": "hardener", "action": "improve", "description": "Added headersSent guard to json() helper. Prevents ERR_HTTP_HEADERS_SENT crash when error handler fires after partial response (e.g. piped download stream failure).", "at": "2026-06-08T09:56:00Z"}
+    {"persona": "hardener", "action": "improve", "description": "Added headersSent guard to json() helper. Prevents ERR_HTTP_HEADERS_SENT crash when error handler fires after partial response (e.g. piped download stream failure).", "at": "2026-06-08T09:56:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed action recording: recordingStore per session, ActionEntry (action/params/timestamp/durationMs), POST start/stop + GET retrieve. Auto-records all page actions with timing for workflow replay.", "at": "2026-06-08T10:00:00Z"}
   ]
 }
