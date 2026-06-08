@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-sdk-client",
-      "title": "TypeScript SDK client library for the Anvil Engine API",
-      "completed_by": "builder",
-      "completed_at": "2026-06-08T09:08:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-08T09:10:00Z"
-    }
-  ],
+  "needs_review": [],
   "needs_review": [],
   "needs_review": [],
   "needs_review": [],
@@ -36,7 +27,8 @@
     {"id": "feat-session-targeting", "title": "Target specific sessions by ID via X-Session-Id header or query param"},
     {"id": "feat-useragent-viewport", "title": "Custom user-agent and viewport emulation per session"},
     {"id": "feat-fingerprint-randomization", "title": "Browser fingerprint randomization for advanced anti-detection"},
-    {"id": "feat-file-upload", "title": "File upload handling for form file inputs"}
+    {"id": "feat-file-upload", "title": "File upload handling for form file inputs"},
+    {"id": "feat-sdk-client", "title": "TypeScript SDK client library for the Anvil Engine API"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -84,6 +76,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-file-upload: correct path traversal defense + basename, base64 decode before size check, withBrowser for safe disconnect, finally cleanup of temp file, 10MB limit, 19 tests. Approved.", "at": "2026-06-08T09:00:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed TypeScript SDK client: AnvilClient class wrapping all 24 endpoints with typed methods, native fetch, X-Session-Id targeting, Bearer auth, error throwing on non-2xx. Zero dependencies, separate entrypoint.", "at": "2026-06-08T09:05:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented AnvilClient in src/client.ts: 24 typed methods (createSession/release/navigate/click/type/select/hover/wait/evaluate/upload/scrape/pdf/screenshot/cookies/har/intercept/downloads), native fetch, Bearer auth, X-Session-Id targeting, throws on error. Exported as ./client in package.json.", "at": "2026-06-08T09:08:00Z"},
-    {"persona": "tester", "action": "test", "description": "31 tests for SDK client: constructor (baseUrl/apiKey/trailing slash), session lifecycle (6 methods), action methods (8), content methods (5), network methods (4), file methods (2), method count verification (25 total), exports (named export + interface). 273 total.", "at": "2026-06-08T09:10:00Z"}
+    {"persona": "tester", "action": "test", "description": "31 tests for SDK client: constructor (baseUrl/apiKey/trailing slash), session lifecycle (6 methods), action methods (8), content methods (5), network methods (4), file methods (2), method count verification (25 total), exports (named export + interface). 273 total.", "at": "2026-06-08T09:10:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-sdk-client: clean generic request<T> method, correct URL construction, proper auth/session header injection, JSON/binary response handling, good TypeScript ergonomics, 31 tests. Approved.", "at": "2026-06-08T09:12:00Z"}
   ]
 }
