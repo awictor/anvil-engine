@@ -5,15 +5,17 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-action-recording",
       "title": "Session action recording and replay",
       "completed_by": "builder",
-      "completed_at": "2026-06-08T10:05:00Z"
+      "completed_at": "2026-06-08T10:05:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-08T10:08:00Z"
     }
   ],
-  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -38,6 +40,7 @@
     {"id": "feat-metrics-endpoint", "title": "GET /v1/metrics - operational metrics for monitoring"}
   ],
   "log": [
-    {"persona": "builder", "action": "implement", "description": "Implemented action recording: recordingStore Map, ActionEntry interface, POST /v1/recording/start + stop + GET /v1/recording, recordAction helper with timing. Navigate and click record actions with durationMs. 29 endpoints total.", "at": "2026-06-08T10:05:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented action recording: recordingStore Map, ActionEntry interface, POST /v1/recording/start + stop + GET /v1/recording, recordAction helper with timing. Navigate and click record actions with durationMs. 29 endpoints total.", "at": "2026-06-08T10:05:00Z"},
+    {"persona": "tester", "action": "test", "description": "20 tests for action recording: start (response/sessionId/requires session), stop (response/actions count/requires session), get (status/array/requires session), ActionEntry shape (action/params/timestamp/durationMs), recordAction behavior (inactive/active/navigate/click), lifecycle (create/delete/empty). 357 total.", "at": "2026-06-08T10:08:00Z"}
   ]
 }
