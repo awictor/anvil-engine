@@ -3,7 +3,33 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-api-docs",
+      "title": "GET /v1/docs - self-documenting API endpoint listing",
+      "by": "architect",
+      "at": "2026-06-08T10:25:00Z",
+      "spec": {
+        "summary": "A docs endpoint that returns a structured JSON listing of all available endpoints with their methods, paths, parameters, and descriptions. Makes the API self-documenting without external files.",
+        "implementation_notes": [
+          "GET /v1/docs returns JSON array of endpoint descriptions",
+          "Each entry: {method, path, description, params?, body?}",
+          "Group by category: sessions, actions, content, network, files, recording, observability",
+          "Exempt from auth (like health/metrics) - docs should always be accessible",
+          "Static response (no computation needed, just a JSON literal)",
+          "Include version field in response"
+        ],
+        "files_to_modify": ["src/api.ts"],
+        "acceptance_criteria": [
+          "GET /v1/docs returns structured endpoint listing",
+          "All 29 endpoints are documented",
+          "Exempt from auth and rate limiting",
+          "Includes version and total endpoint count",
+          "Response is valid JSON"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -40,6 +66,7 @@
     {"persona": "security", "action": "harden", "description": "Validated userDataDir on session creation: rejects path traversal (..) and control characters (\\r\\n\\0). Prevents Chrome writing data to sensitive system directories via malicious userDataDir param.", "at": "2026-06-08T10:17:00Z"},
     {"persona": "refactor", "action": "improve", "description": "Cleaned up package.json: removed unused fastify dependency, added 'start' script (node dist/api.js). Reduces install size and provides standard production start command.", "at": "2026-06-08T10:19:00Z"},
     {"persona": "hardener", "action": "improve", "description": "Added ANVIL_HOST env var (default 0.0.0.0) for bind address control. Operators can set to 127.0.0.1 for local-only access. Startup log shows actual bind address. 8 env vars total.", "at": "2026-06-08T10:21:00Z"},
-    {"persona": "reliability", "action": "improve", "description": "Added SIGKILL fallback in killBrowser: if Chrome doesn't exit within 3s of SIGTERM, force-kills with SIGKILL. Prevents zombie Chrome processes on Windows/hung Chrome.", "at": "2026-06-08T10:23:00Z"}
+    {"persona": "reliability", "action": "improve", "description": "Added SIGKILL fallback in killBrowser: if Chrome doesn't exit within 3s of SIGTERM, force-kills with SIGKILL. Prevents zombie Chrome processes on Windows/hung Chrome.", "at": "2026-06-08T10:23:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed GET /v1/docs: self-documenting endpoint listing with method/path/description/params for all 29 endpoints, grouped by category, exempt from auth+rate-limit, includes version.", "at": "2026-06-08T10:25:00Z"}
   ]
 }
