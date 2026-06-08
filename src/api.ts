@@ -6,6 +6,7 @@ import { createCdpProxy } from "./cdp-proxy.js";
 import { BrowserPool } from "./pool.js";
 import { withBrowser } from "./browser-helper.js";
 import { generateFingerprintScript } from "./fingerprint.js";
+import { fireWebhook } from "./webhooks.js";
 
 const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
 const API_KEY = process.env.ANVIL_API_KEY || "";
@@ -86,6 +87,7 @@ const server = createServer(async (req, res) => {
         fingerprint: stealthEnabled,
         createdAt: new Date(session.createdAt).toISOString(),
       });
+      fireWebhook("session.created", session.id);
       return;
     }
 
@@ -143,6 +145,7 @@ const server = createServer(async (req, res) => {
       const session = await sessionManager.destroy(releaseMatch[1]);
       if (session) {
         json(res, 200, { id: session.id, status: "released", duration: Date.now() - session.createdAt });
+        fireWebhook("session.released", session.id);
       } else {
         json(res, 404, { error: "Session not found" });
       }

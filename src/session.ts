@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import { launchBrowser, killBrowser, type BrowserProcess, type LaunchOptions } from "./launcher.js";
 import { type BrowserPool } from "./pool.js";
+import { fireWebhook } from "./webhooks.js";
 
 export interface Session {
   id: string;
@@ -104,6 +105,7 @@ export class SessionManager {
         if (idleMs > timeoutMs) {
           process.stderr.write(`[anvil-engine] Session ${id} timed out after ${idleMs}ms idle\n`);
           this.destroy(id);
+          fireWebhook("session.timed_out", id);
         }
       }
     }, 30000);
