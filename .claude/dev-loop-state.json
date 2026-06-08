@@ -95,6 +95,7 @@
     {"persona": "architect", "action": "spec", "description": "Designed GET /v1/metrics: in-memory counters (sessionsCreated/released/timedOut, peakConcurrent, requestsServed, errorsCount), exempt from auth+rate-limit, incremented at event points.", "at": "2026-06-08T09:48:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/metrics: in-memory counters (sessionsCreated/released, peakConcurrent, requestsServed, errorsCount), incremented on finish/create/release. Exempt from auth+rate-limit. Returns counters + activeSessions + uptime. 26 endpoints total.", "at": "2026-06-08T09:50:00Z"},
     {"persona": "tester", "action": "test", "description": "19 tests for metrics: response shape (7 fields), counter increment logic (OPTIONS excluded, 4xx/5xx errors, peakConcurrent max/never-decrease), auth+rate-limit exemption (metrics+health), initial state (all zero). 337 total.", "at": "2026-06-08T09:52:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-metrics-endpoint: correct counter increments, Math.max watermark, no sensitive data exposed, dual exemption (auth+rate-limit), 19 tests. Approved.", "at": "2026-06-08T09:54:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-metrics-endpoint: correct counter increments, Math.max watermark, no sensitive data exposed, dual exemption (auth+rate-limit), 19 tests. Approved.", "at": "2026-06-08T09:54:00Z"},
+    {"persona": "hardener", "action": "improve", "description": "Added headersSent guard to json() helper. Prevents ERR_HTTP_HEADERS_SENT crash when error handler fires after partial response (e.g. piped download stream failure).", "at": "2026-06-08T09:56:00Z"}
   ]
 }

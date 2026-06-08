@@ -678,6 +678,7 @@ function resolveSession(req: import("node:http").IncomingMessage, url: URL): Res
 }
 
 function json(res: import("node:http").ServerResponse, status: number, data: unknown) {
+  if (res.headersSent) return;
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
 }
