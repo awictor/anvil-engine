@@ -3,7 +3,40 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-sdk-client",
+      "title": "TypeScript SDK client library for the Anvil Engine API",
+      "by": "architect",
+      "at": "2026-06-08T09:05:00Z",
+      "spec": {
+        "summary": "A lightweight TypeScript client class that wraps all 24 REST endpoints with typed methods. Published as a separate entrypoint (src/client.ts) that can be imported independently of the server.",
+        "implementation_notes": [
+          "Create src/client.ts with class AnvilClient",
+          "Constructor: new AnvilClient({baseUrl, apiKey?})",
+          "Methods map 1:1 to endpoints with typed params and returns",
+          "Core methods: createSession, releaseSession, getSession, listSessions, health",
+          "Action methods: navigate, click, type, select, hover, wait, evaluate, upload",
+          "Content methods: scrape, pdf, screenshot, getCookies, setCookies",
+          "Network methods: startHar, stopHar, getHar, intercept",
+          "File methods: listDownloads, getDownload",
+          "All methods accept optional sessionId to target specific session",
+          "Uses native fetch (no dependencies)",
+          "Export from package.json as ./client entrypoint"
+        ],
+        "files_to_modify": ["src/client.ts (new)", "package.json"],
+        "acceptance_criteria": [
+          "AnvilClient class with baseUrl + apiKey config",
+          "All 24 endpoints have typed wrapper methods",
+          "Methods pass X-Session-Id header when sessionId provided",
+          "Authorization Bearer header added when apiKey configured",
+          "Returns parsed JSON (not raw Response)",
+          "Throws on non-2xx responses with error message",
+          "Zero runtime dependencies (uses native fetch)"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -71,6 +104,7 @@
     {"persona": "architect", "action": "spec", "description": "Designed file upload: POST /v1/actions/upload with selector + filename + base64 data. Write to temp, page.uploadFile(), cleanup after. 10MB data limit, path traversal rejection, reuses session downloadDir.", "at": "2026-06-05T16:00:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented POST /v1/actions/upload: validate selector/filename/data, reject path traversal, decode base64, enforce 10MB limit, write temp file to downloadDir, page.$(selector).uploadFile(), cleanup in finally block. 24 endpoints total.", "at": "2026-06-05T16:02:00Z"},
     {"persona": "tester", "action": "test", "description": "19 tests for file upload: input validation (selector/filename/data/session), path traversal protection (../slash/backslash/safe names), base64 decode + 10MB limit, temp file handling (basename/finally cleanup/no-dir error), success response shape, element-not-found error, request body contract. 242 total.", "at": "2026-06-05T16:06:00Z"},
-    {"persona": "reviewer", "action": "approve", "description": "feat-file-upload: correct path traversal defense + basename, base64 decode before size check, withBrowser for safe disconnect, finally cleanup of temp file, 10MB limit, 19 tests. Approved.", "at": "2026-06-08T09:00:00Z"}
+    {"persona": "reviewer", "action": "approve", "description": "feat-file-upload: correct path traversal defense + basename, base64 decode before size check, withBrowser for safe disconnect, finally cleanup of temp file, 10MB limit, 19 tests. Approved.", "at": "2026-06-08T09:00:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed TypeScript SDK client: AnvilClient class wrapping all 24 endpoints with typed methods, native fetch, X-Session-Id targeting, Bearer auth, error throwing on non-2xx. Zero dependencies, separate entrypoint.", "at": "2026-06-08T09:05:00Z"}
   ]
 }
