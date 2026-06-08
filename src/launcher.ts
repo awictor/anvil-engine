@@ -177,4 +177,9 @@ export function killBrowser(proc: BrowserProcess): void {
   } catch {
     // Already dead
   }
+  setTimeout(() => {
+    try {
+      if (!proc.process.killed) proc.process.kill("SIGKILL");
+    } catch {}
+  }, 3000);
 }
