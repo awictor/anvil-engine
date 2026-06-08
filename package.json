@@ -10,12 +10,12 @@
   },
   "scripts": {
     "build": "tsc",
+    "start": "node dist/api.js",
     "dev": "tsx src/api.ts",
     "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "fastify": "^5.2.1",
     "puppeteer-core": "^24.0.0",
     "ws": "^8.18.0"
   },
