@@ -259,7 +259,7 @@ const server = createServer(async (req, res) => {
         const format = body.format || "text";
         const content = format === "html"
           ? await page.content()
-          : await page.evaluate(() => document.body.innerText);
+          : await page.evaluate(() => document.body?.innerText || "");
         return { content, title: await page.title(), url: page.url() };
       });
 

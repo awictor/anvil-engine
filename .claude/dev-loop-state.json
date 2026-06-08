@@ -48,6 +48,7 @@
     {"persona": "reliability", "action": "improve", "description": "Added uncaughtException and unhandledRejection handlers. Logs to stderr instead of crashing the server process. Prevents total service outage from unexpected errors in async code paths.", "at": "2026-06-08T10:32:00Z"},
     {"persona": "integration", "action": "test", "description": "Updated total endpoint count from 29 to 30 (added GET /v1/docs). Integration test now verifies complete 30-endpoint surface area.", "at": "2026-06-08T10:34:00Z"},
     {"persona": "security", "action": "harden", "description": "Blocked dangerous URL protocols in navigate/scrape/pdf endpoints. Rejects file://, javascript:, data: URLs with 400. Prevents local file read (file://), XSS (javascript:), and data exfiltration via Chrome.", "at": "2026-06-08T10:36:00Z"},
-    {"persona": "refactor", "action": "improve", "description": "Updated Dockerfile: added ANVIL_ENGINE_PORT and ANVIL_HOST env defaults, added Docker HEALTHCHECK (30s interval, hits /v1/health). Container now self-reports health to orchestrators (ECS, K8s, Docker Compose).", "at": "2026-06-08T10:38:00Z"}
+    {"persona": "refactor", "action": "improve", "description": "Updated Dockerfile: added ANVIL_ENGINE_PORT and ANVIL_HOST env defaults, added Docker HEALTHCHECK (30s interval, hits /v1/health). Container now self-reports health to orchestrators (ECS, K8s, Docker Compose).", "at": "2026-06-08T10:38:00Z"},
+    {"persona": "hardener", "action": "improve", "description": "Added null guard in scrape text extraction: document.body?.innerText || ''. Prevents crash on bodyless pages (XML, about:blank, error pages).", "at": "2026-06-08T10:40:00Z"}
   ]
 }
