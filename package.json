@@ -4,6 +4,10 @@
   "description": "Independent browser-as-a-service engine — zero third-party browser infra dependencies",
   "type": "module",
   "main": "dist/api.js",
+  "exports": {
+    ".": "./dist/api.js",
+    "./client": "./dist/client.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/api.ts",
