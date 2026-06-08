@@ -751,6 +751,12 @@ async function shutdown(signal: string) {
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("uncaughtException", (err) => {
+  process.stderr.write(`[anvil-engine] Uncaught exception: ${err.message}\n`);
+});
+process.on("unhandledRejection", (reason) => {
+  process.stderr.write(`[anvil-engine] Unhandled rejection: ${reason}\n`);
+});
 
 // Start server (init pool first if configured)
 (async () => {
