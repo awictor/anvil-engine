@@ -24,7 +24,10 @@ export class BrowserPool {
     if (this.warm.length > 0) {
       return this.warm.pop()!;
     }
-    return launchBrowser(options);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Browser launch timed out after 30s")), 30000),
+    );
+    return Promise.race([launchBrowser(options), timeout]);
   }
 
   release(proc: BrowserProcess): void {
