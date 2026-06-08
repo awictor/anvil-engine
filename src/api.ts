@@ -234,7 +234,7 @@ const server = createServer(async (req, res) => {
         if (session.browserProcess.proxyCredentials) {
           await page.authenticate(session.browserProcess.proxyCredentials);
         }
-        await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2" });
+        await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2", timeout: Math.min(body.timeout || 30000, 60000) });
         return { url: page.url(), title: await page.title() };
       });
       recordAction(session.id, "navigate", { url: body.url, waitUntil: body.waitUntil }, Date.now() - t0);
@@ -261,7 +261,7 @@ const server = createServer(async (req, res) => {
         if (session.browserProcess.proxyCredentials) {
           await page.authenticate(session.browserProcess.proxyCredentials);
         }
-        await page.goto(body.url, { waitUntil: "networkidle2" });
+        await page.goto(body.url, { waitUntil: "networkidle2", timeout: 60000 });
         if (body.waitForSelector) {
           await page.waitForSelector(body.waitForSelector, { timeout: 10000 });
         }
@@ -291,7 +291,7 @@ const server = createServer(async (req, res) => {
           await page.authenticate(session.browserProcess.proxyCredentials);
         }
         if (body.url) {
-          await page.goto(body.url, { waitUntil: "networkidle2" });
+          await page.goto(body.url, { waitUntil: "networkidle2", timeout: 60000 });
         }
         return page.pdf({
           format: body.format || "A4",

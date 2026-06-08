@@ -57,6 +57,7 @@
     {"persona": "hardener", "action": "improve", "description": "Capped user-controlled timeouts: waitForSelector max 60s (was unbounded), type delay max 500ms (was unbounded). Prevents resource exhaustion via malicious timeout/delay values tying up connections.", "at": "2026-06-08T10:50:00Z"},
     {"persona": "reliability", "action": "improve", "description": "Added server.close() at start of shutdown handler. Stops accepting new connections before destroying sessions — prevents new requests from arriving during cleanup and getting half-processed responses.", "at": "2026-06-08T10:52:00Z"},
     {"persona": "security", "action": "improve", "description": "Added X-Request-Id header (monotonic counter req-N) to all responses + included in stderr logs. Enables request tracing, log correlation, and debugging production issues.", "at": "2026-06-08T10:55:00Z"},
-    {"persona": "refactor", "action": "improve", "description": "Added proper TypeScript types field to package.json exports. Both '.' and './client' entries now have conditional exports with types + default. Library consumers get full IntelliSense for AnvilClient.", "at": "2026-06-08T10:57:00Z"}
+    {"persona": "refactor", "action": "improve", "description": "Added proper TypeScript types field to package.json exports. Both '.' and './client' entries now have conditional exports with types + default. Library consumers get full IntelliSense for AnvilClient.", "at": "2026-06-08T10:57:00Z"},
+    {"persona": "hardener", "action": "improve", "description": "Added explicit navigation timeout caps: navigate accepts body.timeout (max 60s), scrape/pdf capped at 60s. Prevents connection slot exhaustion from extremely slow pages holding goto indefinitely.", "at": "2026-06-08T10:59:00Z"}
   ]
 }
