@@ -55,6 +55,7 @@
     {"persona": "security", "action": "harden", "description": "Added authentication to CDP WebSocket proxy. When ANVIL_API_KEY is set, WebSocket connections must include ?token=<key> query param or get closed with 4001. Previously anyone with a session ID could bypass REST API auth entirely via ws://.", "at": "2026-06-08T10:46:00Z"},
     {"persona": "refactor", "action": "improve", "description": "Updated client test method count from 25 to 30 (added startRecording/stopRecording/getRecording/metrics/docs). Test now verifies full SDK coverage.", "at": "2026-06-08T10:48:00Z"},
     {"persona": "hardener", "action": "improve", "description": "Capped user-controlled timeouts: waitForSelector max 60s (was unbounded), type delay max 500ms (was unbounded). Prevents resource exhaustion via malicious timeout/delay values tying up connections.", "at": "2026-06-08T10:50:00Z"},
-    {"persona": "reliability", "action": "improve", "description": "Added server.close() at start of shutdown handler. Stops accepting new connections before destroying sessions — prevents new requests from arriving during cleanup and getting half-processed responses.", "at": "2026-06-08T10:52:00Z"}
+    {"persona": "reliability", "action": "improve", "description": "Added server.close() at start of shutdown handler. Stops accepting new connections before destroying sessions — prevents new requests from arriving during cleanup and getting half-processed responses.", "at": "2026-06-08T10:52:00Z"},
+    {"persona": "security", "action": "improve", "description": "Added X-Request-Id header (monotonic counter req-N) to all responses + included in stderr logs. Enables request tracing, log correlation, and debugging production issues.", "at": "2026-06-08T10:55:00Z"}
   ]
 }

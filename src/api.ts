@@ -46,8 +46,12 @@ interface ActionEntry {
 }
 const recordingStore = new Map<string, ActionEntry[]>();
 
+let requestCounter = 0;
 const server = createServer(async (req, res) => {
   const startTime = Date.now();
+  const requestId = `req-${++requestCounter}`;
+  res.setHeader("X-Request-Id", requestId);
+
   let url: URL;
   try {
     url = new URL(req.url || "/", `http://localhost:${PORT}`);
@@ -62,7 +66,7 @@ const server = createServer(async (req, res) => {
     if (method !== "OPTIONS") {
       metrics.requestsServed++;
       if (res.statusCode >= 400) metrics.errorsCount++;
-      process.stderr.write(`[anvil-engine] ${method} ${url.pathname} ${res.statusCode} ${Date.now() - startTime}ms\n`);
+      process.stderr.write(`[anvil-engine] ${requestId} ${method} ${url.pathname} ${res.statusCode} ${Date.now() - startTime}ms\n`);
     }
   });
 
