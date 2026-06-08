@@ -65,7 +65,7 @@ const server = createServer(async (req, res) => {
   if (method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
   // Rate limiting (exempt health endpoint)
-  if (rateLimiter && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics") {
+  if (rateLimiter && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics" && url.pathname !== "/v1/docs") {
     const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
     const { allowed, retryAfterSec } = rateLimiter.consume(clientIp);
     if (!allowed) {
@@ -76,7 +76,7 @@ const server = createServer(async (req, res) => {
   }
 
   // API key authentication (exempt health + metrics)
-  if (API_KEY && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics") {
+  if (API_KEY && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics" && url.pathname !== "/v1/docs") {
     const auth = req.headers.authorization || "";
     if (auth !== `Bearer ${API_KEY}`) {
       json(res, 401, { error: "Unauthorized" });
@@ -661,6 +661,61 @@ const server = createServer(async (req, res) => {
     // GET /v1/metrics
     if (method === "GET" && url.pathname === "/v1/metrics") {
       json(res, 200, { ...metrics, activeSessions: sessionManager.size, uptime: process.uptime() });
+      return;
+    }
+
+    // GET /v1/docs
+    if (method === "GET" && url.pathname === "/v1/docs") {
+      json(res, 200, {
+        version: "0.1.0",
+        endpoints: 30,
+        categories: {
+          sessions: [
+            { method: "POST", path: "/v1/sessions", description: "Create a new browser session" },
+            { method: "GET", path: "/v1/sessions", description: "Get active session info" },
+            { method: "GET", path: "/v1/sessions/:id", description: "Get specific session details" },
+            { method: "GET", path: "/v1/sessions/list", description: "List all sessions" },
+            { method: "POST", path: "/v1/sessions/:id/release", description: "Destroy a session" },
+          ],
+          actions: [
+            { method: "POST", path: "/v1/actions/navigate", description: "Navigate to URL" },
+            { method: "POST", path: "/v1/actions/click", description: "Click element by selector" },
+            { method: "POST", path: "/v1/actions/type", description: "Type text into element" },
+            { method: "POST", path: "/v1/actions/select", description: "Select option(s) in dropdown" },
+            { method: "POST", path: "/v1/actions/hover", description: "Hover over element" },
+            { method: "POST", path: "/v1/actions/wait", description: "Wait for selector to appear" },
+            { method: "POST", path: "/v1/actions/evaluate", description: "Execute JavaScript in page" },
+            { method: "POST", path: "/v1/actions/upload", description: "Upload file to input element" },
+          ],
+          content: [
+            { method: "POST", path: "/v1/scrape", description: "Scrape page content (html/text)" },
+            { method: "POST", path: "/v1/pdf", description: "Generate PDF from page" },
+            { method: "GET", path: "/v1/screenshot", description: "Capture page screenshot" },
+            { method: "GET", path: "/v1/cookies", description: "Get all cookies" },
+            { method: "POST", path: "/v1/cookies", description: "Set cookies" },
+          ],
+          network: [
+            { method: "POST", path: "/v1/har/start", description: "Start HAR recording" },
+            { method: "POST", path: "/v1/har/stop", description: "Stop HAR recording" },
+            { method: "GET", path: "/v1/har", description: "Get HAR entries" },
+            { method: "POST", path: "/v1/intercept", description: "Enable/disable request interception" },
+          ],
+          recording: [
+            { method: "POST", path: "/v1/recording/start", description: "Start action recording" },
+            { method: "POST", path: "/v1/recording/stop", description: "Stop action recording" },
+            { method: "GET", path: "/v1/recording", description: "Get recorded actions" },
+          ],
+          files: [
+            { method: "GET", path: "/v1/downloads", description: "List downloaded files" },
+            { method: "GET", path: "/v1/downloads/:filename", description: "Download a file" },
+          ],
+          observability: [
+            { method: "GET", path: "/v1/health", description: "Health check" },
+            { method: "GET", path: "/v1/metrics", description: "Operational metrics" },
+            { method: "GET", path: "/v1/docs", description: "API documentation" },
+          ],
+        },
+      });
       return;
     }
 
