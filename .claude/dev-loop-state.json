@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-metrics-endpoint",
-      "title": "GET /v1/metrics - operational metrics for monitoring",
-      "completed_by": "builder",
-      "completed_at": "2026-06-08T09:50:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-08T09:52:00Z"
-    }
-  ],
+  "needs_review": [],
   "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
@@ -37,7 +28,8 @@
     {"id": "feat-file-upload", "title": "File upload handling for form file inputs"},
     {"id": "feat-sdk-client", "title": "TypeScript SDK client library for the Anvil Engine API"},
     {"id": "feat-webhooks", "title": "Webhook callbacks for session lifecycle events"},
-    {"id": "feat-rate-limiting", "title": "Request rate limiting with configurable requests-per-minute"}
+    {"id": "feat-rate-limiting", "title": "Request rate limiting with configurable requests-per-minute"},
+    {"id": "feat-metrics-endpoint", "title": "GET /v1/metrics - operational metrics for monitoring"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -102,6 +94,7 @@
     {"persona": "security", "action": "harden", "description": "Fixed HTTP header injection via filenames: added \\r\\n\\0 rejection to both download and upload filename validation. Prevents Content-Disposition header injection through crafted filenames with newlines.", "at": "2026-06-08T09:45:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed GET /v1/metrics: in-memory counters (sessionsCreated/released/timedOut, peakConcurrent, requestsServed, errorsCount), exempt from auth+rate-limit, incremented at event points.", "at": "2026-06-08T09:48:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/metrics: in-memory counters (sessionsCreated/released, peakConcurrent, requestsServed, errorsCount), incremented on finish/create/release. Exempt from auth+rate-limit. Returns counters + activeSessions + uptime. 26 endpoints total.", "at": "2026-06-08T09:50:00Z"},
-    {"persona": "tester", "action": "test", "description": "19 tests for metrics: response shape (7 fields), counter increment logic (OPTIONS excluded, 4xx/5xx errors, peakConcurrent max/never-decrease), auth+rate-limit exemption (metrics+health), initial state (all zero). 337 total.", "at": "2026-06-08T09:52:00Z"}
+    {"persona": "tester", "action": "test", "description": "19 tests for metrics: response shape (7 fields), counter increment logic (OPTIONS excluded, 4xx/5xx errors, peakConcurrent max/never-decrease), auth+rate-limit exemption (metrics+health), initial state (all zero). 337 total.", "at": "2026-06-08T09:52:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-metrics-endpoint: correct counter increments, Math.max watermark, no sensitive data exposed, dual exemption (auth+rate-limit), 19 tests. Approved.", "at": "2026-06-08T09:54:00Z"}
   ]
 }
