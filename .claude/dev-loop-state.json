@@ -3,7 +3,36 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-webhooks",
+      "title": "Webhook callbacks for session lifecycle events",
+      "by": "architect",
+      "at": "2026-06-08T09:22:00Z",
+      "spec": {
+        "summary": "Fire HTTP POST to a configured webhook URL on session events: created, released, timed_out. ANVIL_WEBHOOK_URL env var. Fire-and-forget (non-blocking). Include event type, session ID, and timestamp in payload.",
+        "implementation_notes": [
+          "Add ANVIL_WEBHOOK_URL env var (empty = disabled)",
+          "Create src/webhooks.ts with fireWebhook(event, sessionId) function",
+          "Events: 'session.created', 'session.released', 'session.timed_out'",
+          "Payload: {event, sessionId, timestamp}",
+          "Use native fetch with 5s timeout (AbortController), catch all errors silently",
+          "Call from: session create response, session release response, cleanup interval destroy",
+          "Non-blocking: don't await the webhook in the request path (fire and forget)",
+          "Log webhook failures to stderr (not throw)"
+        ],
+        "files_to_modify": ["src/webhooks.ts (new)", "src/api.ts", "src/session.ts"],
+        "acceptance_criteria": [
+          "ANVIL_WEBHOOK_URL env enables webhook firing",
+          "POST request sent to webhook URL on session events",
+          "Payload includes event type, sessionId, ISO timestamp",
+          "5s timeout prevents hanging on slow webhooks",
+          "Errors are logged not thrown (non-blocking)",
+          "No webhook calls when env var is empty"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -80,6 +109,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-sdk-client: clean generic request<T> method, correct URL construction, proper auth/session header injection, JSON/binary response handling, good TypeScript ergonomics, 31 tests. Approved.", "at": "2026-06-08T09:12:00Z"},
     {"persona": "refactor", "action": "improve", "description": "Improved error handler: catch-all now returns 413 for body-too-large errors and 404 for not-found errors instead of blanket 500. Semantic HTTP status codes for better client-side error handling.", "at": "2026-06-08T09:15:00Z"},
     {"persona": "reliability", "action": "improve", "description": "Added 30s acquisition timeout to BrowserPool.acquire() via Promise.race. Prevents request hang when Chrome fails to launch (common in low-resource Docker). Returns clear 'Browser launch timed out' error.", "at": "2026-06-08T09:18:00Z"},
-    {"persona": "integration", "action": "test", "description": "Updated integration tests: full 25-endpoint registry (was 11), updated session lifecycle to 5 (added :id), added client SDK module tests (export, instantiation), fingerprint module export test. 277 total.", "at": "2026-06-08T09:20:00Z"}
+    {"persona": "integration", "action": "test", "description": "Updated integration tests: full 25-endpoint registry (was 11), updated session lifecycle to 5 (added :id), added client SDK module tests (export, instantiation), fingerprint module export test. 277 total.", "at": "2026-06-08T09:20:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed webhook callbacks: ANVIL_WEBHOOK_URL env, fire-and-forget POST on session.created/released/timed_out, 5s AbortController timeout, payload {event, sessionId, timestamp}, errors logged not thrown.", "at": "2026-06-08T09:22:00Z"}
   ]
 }
