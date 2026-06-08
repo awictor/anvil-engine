@@ -5,12 +5,18 @@ export async function withBrowser<T>(
   fn: (page: Page, browser: Browser) => Promise<T>,
 ): Promise<T> {
   const puppeteer = await import("puppeteer-core");
-  const browser = await puppeteer.default.connect({ browserWSEndpoint: wsEndpoint });
+  let browser: Browser;
+  try {
+    browser = await puppeteer.default.connect({ browserWSEndpoint: wsEndpoint });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Browser connection failed (session may have crashed): ${msg}`);
+  }
   try {
     const pages = await browser.pages();
     const page = pages[0] || await browser.newPage();
     return await fn(page, browser);
   } finally {
-    browser.disconnect();
+    try { browser.disconnect(); } catch {}
   }
 }
