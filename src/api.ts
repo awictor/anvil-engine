@@ -213,6 +213,10 @@ const server = createServer(async (req, res) => {
         json(res, 400, { error: "body.url must be a non-empty string" });
         return;
       }
+      if (/^(file|javascript|data):/i.test(body.url)) {
+        json(res, 400, { error: "Blocked protocol: only http/https allowed" });
+        return;
+      }
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
@@ -235,6 +239,10 @@ const server = createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || "{}");
       if (!body.url || typeof body.url !== "string") {
         json(res, 400, { error: "body.url must be a non-empty string" });
+        return;
+      }
+      if (/^(file|javascript|data):/i.test(body.url)) {
+        json(res, 400, { error: "Blocked protocol: only http/https allowed" });
         return;
       }
       const { session, error: sessionError } = resolveSession(req, url);
@@ -262,6 +270,10 @@ const server = createServer(async (req, res) => {
     // POST /v1/pdf — generate PDF
     if (method === "POST" && url.pathname === "/v1/pdf") {
       const body = JSON.parse(await readBody(req) || "{}");
+      if (body.url && /^(file|javascript|data):/i.test(body.url)) {
+        json(res, 400, { error: "Blocked protocol: only http/https allowed" });
+        return;
+      }
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
