@@ -92,6 +92,10 @@ const server = createServer(async (req, res) => {
     if (method === "POST" && url.pathname === "/v1/sessions") {
       const body = await readBody(req);
       const options = body ? JSON.parse(body) : {};
+      if (options.userDataDir && (options.userDataDir.includes("..") || /[\r\n\0]/.test(options.userDataDir))) {
+        json(res, 400, { error: "Invalid userDataDir" });
+        return;
+      }
       const session = await sessionManager.create({
         headless: options.headless,
         width: options.dimensions?.width,
