@@ -36,6 +36,14 @@ interface HarEntry {
 }
 const harStore = new Map<string, HarEntry[]>();
 
+interface ActionEntry {
+  action: string;
+  params: Record<string, unknown>;
+  timestamp: string;
+  durationMs: number;
+}
+const recordingStore = new Map<string, ActionEntry[]>();
+
 const server = createServer(async (req, res) => {
   const startTime = Date.now();
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
@@ -196,6 +204,7 @@ const server = createServer(async (req, res) => {
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
+      const t0 = Date.now();
       const result = await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         if (session.browserProcess.proxyCredentials) {
           await page.authenticate(session.browserProcess.proxyCredentials);
@@ -203,6 +212,7 @@ const server = createServer(async (req, res) => {
         await page.goto(body.url, { waitUntil: body.waitUntil || "networkidle2" });
         return { url: page.url(), title: await page.title() };
       });
+      recordAction(session.id, "navigate", { url: body.url, waitUntil: body.waitUntil }, Date.now() - t0);
 
       json(res, 200, result);
       return;
@@ -347,6 +357,34 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // POST /v1/recording/start — begin action recording
+    if (method === "POST" && url.pathname === "/v1/recording/start") {
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
+      recordingStore.set(session.id, []);
+      json(res, 200, { recording: true, sessionId: session.id });
+      return;
+    }
+
+    // POST /v1/recording/stop — stop action recording
+    if (method === "POST" && url.pathname === "/v1/recording/stop") {
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
+      const entries = recordingStore.get(session.id) || [];
+      recordingStore.delete(session.id);
+      json(res, 200, { recording: false, actions: entries.length });
+      return;
+    }
+
+    // GET /v1/recording — retrieve recorded actions
+    if (method === "GET" && url.pathname === "/v1/recording") {
+      const { session, error: sessionError } = resolveSession(req, url);
+      if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
+      const entries = recordingStore.get(session.id) || [];
+      json(res, 200, { recording: recordingStore.has(session.id), actions: entries });
+      return;
+    }
+
     // POST /v1/intercept — enable/disable request interception
     if (method === "POST" && url.pathname === "/v1/intercept") {
       const body = JSON.parse(await readBody(req) || "{}");
@@ -392,12 +430,14 @@ const server = createServer(async (req, res) => {
       const { session, error: sessionError } = resolveSession(req, url);
       if (sessionError) { json(res, sessionError.status, sessionError.body); return; }
 
+      const t0 = Date.now();
       await withBrowser(session.browserProcess.wsEndpoint, async (page) => {
         await page.click(body.selector, {
           button: body.button || "left",
           clickCount: body.clickCount || 1,
         });
       });
+      recordAction(session.id, "click", { selector: body.selector, button: body.button, clickCount: body.clickCount }, Date.now() - t0);
       json(res, 200, { success: true, selector: body.selector });
       return;
     }
@@ -701,4 +741,10 @@ function readBody(req: import("node:http").IncomingMessage): Promise<string> {
     req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });
+}
+
+function recordAction(sessionId: string, action: string, params: Record<string, unknown>, durationMs: number): void {
+  const entries = recordingStore.get(sessionId);
+  if (!entries) return;
+  entries.push({ action, params, timestamp: new Date().toISOString(), durationMs });
 }
