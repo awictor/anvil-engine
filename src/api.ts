@@ -18,6 +18,14 @@ const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
 const rateLimiter = RATE_LIMIT_RPM > 0 ? new RateLimiter(RATE_LIMIT_RPM) : null;
 
+const metrics = {
+  sessionsCreated: 0,
+  sessionsReleased: 0,
+  peakConcurrent: 0,
+  requestsServed: 0,
+  errorsCount: 0,
+};
+
 interface HarEntry {
   url: string;
   method: string;
@@ -35,6 +43,8 @@ const server = createServer(async (req, res) => {
 
   res.on("finish", () => {
     if (method !== "OPTIONS") {
+      metrics.requestsServed++;
+      if (res.statusCode >= 400) metrics.errorsCount++;
       process.stderr.write(`[anvil-engine] ${method} ${url.pathname} ${res.statusCode} ${Date.now() - startTime}ms\n`);
     }
   });
@@ -46,7 +56,7 @@ const server = createServer(async (req, res) => {
   if (method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
   // Rate limiting (exempt health endpoint)
-  if (rateLimiter && url.pathname !== "/v1/health") {
+  if (rateLimiter && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics") {
     const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
     const { allowed, retryAfterSec } = rateLimiter.consume(clientIp);
     if (!allowed) {
@@ -56,8 +66,8 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  // API key authentication
-  if (API_KEY) {
+  // API key authentication (exempt health + metrics)
+  if (API_KEY && url.pathname !== "/v1/health" && url.pathname !== "/v1/metrics") {
     const auth = req.headers.authorization || "";
     if (auth !== `Bearer ${API_KEY}`) {
       json(res, 401, { error: "Unauthorized" });
@@ -109,6 +119,8 @@ const server = createServer(async (req, res) => {
         createdAt: new Date(session.createdAt).toISOString(),
       });
       fireWebhook("session.created", session.id);
+      metrics.sessionsCreated++;
+      metrics.peakConcurrent = Math.max(metrics.peakConcurrent, sessionManager.size);
       return;
     }
 
@@ -167,6 +179,7 @@ const server = createServer(async (req, res) => {
       if (session) {
         json(res, 200, { id: session.id, status: "released", duration: Date.now() - session.createdAt });
         fireWebhook("session.released", session.id);
+        metrics.sessionsReleased++;
       } else {
         json(res, 404, { error: "Session not found" });
       }
@@ -597,6 +610,12 @@ const server = createServer(async (req, res) => {
     // GET /v1/health
     if (method === "GET" && url.pathname === "/v1/health") {
       json(res, 200, { status: "ok", sessions: sessionManager.size, uptime: process.uptime(), sessionTimeoutMs: SESSION_TIMEOUT, multiSession: true });
+      return;
+    }
+
+    // GET /v1/metrics
+    if (method === "GET" && url.pathname === "/v1/metrics") {
+      json(res, 200, { ...metrics, activeSessions: sessionManager.size, uptime: process.uptime() });
       return;
     }
 
