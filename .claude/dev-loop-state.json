@@ -3,7 +3,35 @@
   "project": "anvil-engine",
   "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "feat-rate-limiting",
+      "title": "Request rate limiting with configurable requests-per-minute",
+      "by": "architect",
+      "at": "2026-06-08T09:35:00Z",
+      "spec": {
+        "summary": "Token bucket rate limiter that rejects requests exceeding ANVIL_RATE_LIMIT_RPM (requests per minute). Returns 429 Too Many Requests with Retry-After header. Tracks per-IP when no API key, per-key when authenticated.",
+        "implementation_notes": [
+          "Create src/rate-limiter.ts with a simple token bucket class",
+          "ANVIL_RATE_LIMIT_RPM env var (default: 0 = unlimited)",
+          "Token bucket: refills at rate/60 tokens per second, max burst = rate",
+          "Check before auth (so rate-limited clients get 429 not 401)",
+          "Return 429 {error: 'Rate limit exceeded'} with Retry-After header (seconds until next token)",
+          "Track by client IP (req.socket.remoteAddress) or X-Forwarded-For first IP",
+          "Clean up stale bucket entries every 60 seconds"
+        ],
+        "files_to_modify": ["src/rate-limiter.ts (new)", "src/api.ts"],
+        "acceptance_criteria": [
+          "Requests within limit pass through normally",
+          "Requests exceeding limit get 429 with Retry-After header",
+          "Rate limit is per-IP (or per X-Forwarded-For)",
+          "ANVIL_RATE_LIMIT_RPM=0 disables limiting (default)",
+          "Stale buckets are cleaned up periodically",
+          "Health endpoint excluded from rate limiting"
+        ]
+      }
+    }
+  ],
   "in_progress": [],
   "needs_tests": [],
   "needs_review": [],
@@ -87,6 +115,7 @@
     {"persona": "builder", "action": "implement", "description": "Implemented webhooks in src/webhooks.ts: fireWebhook(event, sessionId) with ANVIL_WEBHOOK_URL env, 5s AbortController timeout, fire-and-forget. Integrated at session create, release, and timeout cleanup. Errors logged to stderr.", "at": "2026-06-08T09:25:00Z"},
     {"persona": "tester", "action": "test", "description": "19 tests for webhooks: fireWebhook (export/params/void return/no-throw), WebhookEvent type (3 events), env var (empty=disabled/set=enabled), payload shape (event/sessionId/timestamp/JSON-serializable), timeout/AbortController, integration points (create/release/timeout). 296 total.", "at": "2026-06-08T09:28:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-webhooks: correct fire-and-forget pattern, AbortController cleanup in finally, non-blocking at all 3 integration points, no sensitive data in payload, 19 tests. Approved.", "at": "2026-06-08T09:30:00Z"},
-    {"persona": "hardener", "action": "improve", "description": "Added structured request logging: every non-OPTIONS request logs method, path, status code, and duration (ms) to stderr on response finish. Essential for production debugging and latency monitoring.", "at": "2026-06-08T09:32:00Z"}
+    {"persona": "hardener", "action": "improve", "description": "Added structured request logging: every non-OPTIONS request logs method, path, status code, and duration (ms) to stderr on response finish. Essential for production debugging and latency monitoring.", "at": "2026-06-08T09:32:00Z"},
+    {"persona": "architect", "action": "spec", "description": "Designed rate limiting: token bucket per-IP, ANVIL_RATE_LIMIT_RPM env (0=disabled), 429 + Retry-After header, stale bucket cleanup every 60s, health endpoint exempt.", "at": "2026-06-08T09:35:00Z"}
   ]
 }
