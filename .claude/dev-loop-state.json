@@ -5,12 +5,15 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-sdk-client",
       "title": "TypeScript SDK client library for the Anvil Engine API",
       "completed_by": "builder",
-      "completed_at": "2026-06-08T09:08:00Z"
+      "completed_at": "2026-06-08T09:08:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-08T09:10:00Z"
     }
   ],
   "needs_review": [],
@@ -80,6 +83,7 @@
     {"persona": "tester", "action": "test", "description": "19 tests for file upload: input validation (selector/filename/data/session), path traversal protection (../slash/backslash/safe names), base64 decode + 10MB limit, temp file handling (basename/finally cleanup/no-dir error), success response shape, element-not-found error, request body contract. 242 total.", "at": "2026-06-05T16:06:00Z"},
     {"persona": "reviewer", "action": "approve", "description": "feat-file-upload: correct path traversal defense + basename, base64 decode before size check, withBrowser for safe disconnect, finally cleanup of temp file, 10MB limit, 19 tests. Approved.", "at": "2026-06-08T09:00:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed TypeScript SDK client: AnvilClient class wrapping all 24 endpoints with typed methods, native fetch, X-Session-Id targeting, Bearer auth, error throwing on non-2xx. Zero dependencies, separate entrypoint.", "at": "2026-06-08T09:05:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented AnvilClient in src/client.ts: 24 typed methods (createSession/release/navigate/click/type/select/hover/wait/evaluate/upload/scrape/pdf/screenshot/cookies/har/intercept/downloads), native fetch, Bearer auth, X-Session-Id targeting, throws on error. Exported as ./client in package.json.", "at": "2026-06-08T09:08:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented AnvilClient in src/client.ts: 24 typed methods (createSession/release/navigate/click/type/select/hover/wait/evaluate/upload/scrape/pdf/screenshot/cookies/har/intercept/downloads), native fetch, Bearer auth, X-Session-Id targeting, throws on error. Exported as ./client in package.json.", "at": "2026-06-08T09:08:00Z"},
+    {"persona": "tester", "action": "test", "description": "31 tests for SDK client: constructor (baseUrl/apiKey/trailing slash), session lifecycle (6 methods), action methods (8), content methods (5), network methods (4), file methods (2), method count verification (25 total), exports (named export + interface). 273 total.", "at": "2026-06-08T09:10:00Z"}
   ]
 }
