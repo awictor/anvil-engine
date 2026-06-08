@@ -5,12 +5,15 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-webhooks",
       "title": "Webhook callbacks for session lifecycle events",
       "completed_by": "builder",
-      "completed_at": "2026-06-08T09:25:00Z"
+      "completed_at": "2026-06-08T09:25:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-08T09:28:00Z"
     }
   ],
   "needs_review": [],
@@ -89,6 +92,7 @@
     {"persona": "reliability", "action": "improve", "description": "Added 30s acquisition timeout to BrowserPool.acquire() via Promise.race. Prevents request hang when Chrome fails to launch (common in low-resource Docker). Returns clear 'Browser launch timed out' error.", "at": "2026-06-08T09:18:00Z"},
     {"persona": "integration", "action": "test", "description": "Updated integration tests: full 25-endpoint registry (was 11), updated session lifecycle to 5 (added :id), added client SDK module tests (export, instantiation), fingerprint module export test. 277 total.", "at": "2026-06-08T09:20:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed webhook callbacks: ANVIL_WEBHOOK_URL env, fire-and-forget POST on session.created/released/timed_out, 5s AbortController timeout, payload {event, sessionId, timestamp}, errors logged not thrown.", "at": "2026-06-08T09:22:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented webhooks in src/webhooks.ts: fireWebhook(event, sessionId) with ANVIL_WEBHOOK_URL env, 5s AbortController timeout, fire-and-forget. Integrated at session create, release, and timeout cleanup. Errors logged to stderr.", "at": "2026-06-08T09:25:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented webhooks in src/webhooks.ts: fireWebhook(event, sessionId) with ANVIL_WEBHOOK_URL env, 5s AbortController timeout, fire-and-forget. Integrated at session create, release, and timeout cleanup. Errors logged to stderr.", "at": "2026-06-08T09:25:00Z"},
+    {"persona": "tester", "action": "test", "description": "19 tests for webhooks: fireWebhook (export/params/void return/no-throw), WebhookEvent type (3 events), env var (empty=disabled/set=enabled), payload shape (event/sessionId/timestamp/JSON-serializable), timeout/AbortController, integration points (create/release/timeout). 296 total.", "at": "2026-06-08T09:28:00Z"}
   ]
 }
