@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-action-recording",
-      "title": "Session action recording and replay",
-      "completed_by": "builder",
-      "completed_at": "2026-06-08T10:05:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-08T10:08:00Z"
-    }
-  ],
+  "needs_review": [],
   "done": [
     {"id": "feat-scrape-endpoint", "title": "Scrape endpoint with HTML-to-text conversion"},
     {"id": "feat-pdf-endpoint", "title": "PDF generation endpoint"},
@@ -37,10 +28,12 @@
     {"id": "feat-sdk-client", "title": "TypeScript SDK client library for the Anvil Engine API"},
     {"id": "feat-webhooks", "title": "Webhook callbacks for session lifecycle events"},
     {"id": "feat-rate-limiting", "title": "Request rate limiting with configurable requests-per-minute"},
-    {"id": "feat-metrics-endpoint", "title": "GET /v1/metrics - operational metrics for monitoring"}
+    {"id": "feat-metrics-endpoint", "title": "GET /v1/metrics - operational metrics for monitoring"},
+    {"id": "feat-action-recording", "title": "Session action recording and replay"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Implemented action recording: recordingStore Map, ActionEntry interface, POST /v1/recording/start + stop + GET /v1/recording, recordAction helper with timing. Navigate and click record actions with durationMs. 29 endpoints total.", "at": "2026-06-08T10:05:00Z"},
-    {"persona": "tester", "action": "test", "description": "20 tests for action recording: start (response/sessionId/requires session), stop (response/actions count/requires session), get (status/array/requires session), ActionEntry shape (action/params/timestamp/durationMs), recordAction behavior (inactive/active/navigate/click), lifecycle (create/delete/empty). 357 total.", "at": "2026-06-08T10:08:00Z"}
+    {"persona": "tester", "action": "test", "description": "20 tests for action recording: start (response/sessionId/requires session), stop (response/actions count/requires session), get (status/array/requires session), ActionEntry shape (action/params/timestamp/durationMs), recordAction behavior (inactive/active/navigate/click), lifecycle (create/delete/empty). 357 total.", "at": "2026-06-08T10:08:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-action-recording: correct store lifecycle, recordAction guard (no-op when inactive), timing with Date.now delta, stop returns count before delete, get distinguishes active-empty from inactive. 20 tests. Approved.", "at": "2026-06-08T10:10:00Z"}
   ]
 }
