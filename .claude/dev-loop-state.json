@@ -6,16 +6,7 @@
   "backlog": [],
   "in_progress": [],
   "needs_tests": [],
-  "needs_review": [
-    {
-      "id": "feat-webhooks",
-      "title": "Webhook callbacks for session lifecycle events",
-      "completed_by": "builder",
-      "completed_at": "2026-06-08T09:25:00Z",
-      "tested_by": "tester",
-      "tested_at": "2026-06-08T09:28:00Z"
-    }
-  ],
+  "needs_review": [],
   "needs_review": [],
   "needs_review": [],
   "needs_review": [],
@@ -38,7 +29,8 @@
     {"id": "feat-useragent-viewport", "title": "Custom user-agent and viewport emulation per session"},
     {"id": "feat-fingerprint-randomization", "title": "Browser fingerprint randomization for advanced anti-detection"},
     {"id": "feat-file-upload", "title": "File upload handling for form file inputs"},
-    {"id": "feat-sdk-client", "title": "TypeScript SDK client library for the Anvil Engine API"}
+    {"id": "feat-sdk-client", "title": "TypeScript SDK client library for the Anvil Engine API"},
+    {"id": "feat-webhooks", "title": "Webhook callbacks for session lifecycle events"}
   ],
   "log": [
     {"persona": "builder", "action": "implement", "description": "Initial engine: launcher.ts, session.ts, cdp-proxy.ts, api.ts (7 endpoints + graceful shutdown)", "at": "2026-06-04T10:00:00Z"},
@@ -93,6 +85,7 @@
     {"persona": "integration", "action": "test", "description": "Updated integration tests: full 25-endpoint registry (was 11), updated session lifecycle to 5 (added :id), added client SDK module tests (export, instantiation), fingerprint module export test. 277 total.", "at": "2026-06-08T09:20:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed webhook callbacks: ANVIL_WEBHOOK_URL env, fire-and-forget POST on session.created/released/timed_out, 5s AbortController timeout, payload {event, sessionId, timestamp}, errors logged not thrown.", "at": "2026-06-08T09:22:00Z"},
     {"persona": "builder", "action": "implement", "description": "Implemented webhooks in src/webhooks.ts: fireWebhook(event, sessionId) with ANVIL_WEBHOOK_URL env, 5s AbortController timeout, fire-and-forget. Integrated at session create, release, and timeout cleanup. Errors logged to stderr.", "at": "2026-06-08T09:25:00Z"},
-    {"persona": "tester", "action": "test", "description": "19 tests for webhooks: fireWebhook (export/params/void return/no-throw), WebhookEvent type (3 events), env var (empty=disabled/set=enabled), payload shape (event/sessionId/timestamp/JSON-serializable), timeout/AbortController, integration points (create/release/timeout). 296 total.", "at": "2026-06-08T09:28:00Z"}
+    {"persona": "tester", "action": "test", "description": "19 tests for webhooks: fireWebhook (export/params/void return/no-throw), WebhookEvent type (3 events), env var (empty=disabled/set=enabled), payload shape (event/sessionId/timestamp/JSON-serializable), timeout/AbortController, integration points (create/release/timeout). 296 total.", "at": "2026-06-08T09:28:00Z"},
+    {"persona": "reviewer", "action": "approve", "description": "feat-webhooks: correct fire-and-forget pattern, AbortController cleanup in finally, non-blocking at all 3 integration points, no sensitive data in payload, 19 tests. Approved.", "at": "2026-06-08T09:30:00Z"}
   ]
 }
