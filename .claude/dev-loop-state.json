@@ -51,6 +51,7 @@
     {"persona": "refactor", "action": "improve", "description": "Updated Dockerfile: added ANVIL_ENGINE_PORT and ANVIL_HOST env defaults, added Docker HEALTHCHECK (30s interval, hits /v1/health). Container now self-reports health to orchestrators (ECS, K8s, Docker Compose).", "at": "2026-06-08T10:38:00Z"},
     {"persona": "hardener", "action": "improve", "description": "Added null guard in scrape text extraction: document.body?.innerText || ''. Prevents crash on bodyless pages (XML, about:blank, error pages).", "at": "2026-06-08T10:40:00Z"},
     {"persona": "reliability", "action": "improve", "description": "Added ANVIL_MAX_SESSIONS env (default 10) with 503 rejection when limit reached. Prevents memory exhaustion from unbounded session creation. 9 env vars total.", "at": "2026-06-08T10:42:00Z"},
-    {"persona": "integration", "action": "improve", "description": "Added 5 missing SDK client methods: startRecording, stopRecording, getRecording, metrics, docs. Client now covers all 30 endpoints. 30 typed methods total.", "at": "2026-06-08T10:44:00Z"}
+    {"persona": "integration", "action": "improve", "description": "Added 5 missing SDK client methods: startRecording, stopRecording, getRecording, metrics, docs. Client now covers all 30 endpoints. 30 typed methods total.", "at": "2026-06-08T10:44:00Z"},
+    {"persona": "security", "action": "harden", "description": "Added authentication to CDP WebSocket proxy. When ANVIL_API_KEY is set, WebSocket connections must include ?token=<key> query param or get closed with 4001. Previously anyone with a session ID could bypass REST API auth entirely via ws://.", "at": "2026-06-08T10:46:00Z"}
   ]
 }

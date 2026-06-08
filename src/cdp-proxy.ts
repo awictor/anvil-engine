@@ -5,9 +5,17 @@ import { type SessionManager } from "./session.js";
 
 export function createCdpProxy(server: Server, sessionManager: SessionManager): WebSocketServer {
   const wss = new WebSocketServer({ server, path: "/cdp" });
+  const apiKey = process.env.ANVIL_API_KEY || "";
 
   wss.on("connection", (clientWs: WebSocket, req: IncomingMessage) => {
-    const sessionId = new URL(req.url || "/", "http://localhost").searchParams.get("session");
+    const params = new URL(req.url || "/", "http://localhost").searchParams;
+
+    if (apiKey && params.get("token") !== apiKey) {
+      clientWs.close(4001, "Unauthorized: invalid or missing ?token= parameter");
+      return;
+    }
+
+    const sessionId = params.get("session");
     if (!sessionId) {
       clientWs.close(4000, "Missing ?session= parameter");
       return;
