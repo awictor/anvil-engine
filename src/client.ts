@@ -174,4 +174,30 @@ export class AnvilClient {
   async getDownload(filename: string, sessionId?: string) {
     return this.request<ArrayBuffer>("GET", `/v1/downloads/${encodeURIComponent(filename)}`, undefined, sessionId);
   }
+
+  // Recording
+  async startRecording(sessionId?: string) {
+    return this.request<{ recording: boolean; sessionId: string }>("POST", "/v1/recording/start", undefined, sessionId);
+  }
+
+  async stopRecording(sessionId?: string) {
+    return this.request<{ recording: boolean; actions: number }>("POST", "/v1/recording/stop", undefined, sessionId);
+  }
+
+  async getRecording(sessionId?: string) {
+    return this.request<{ recording: boolean; actions: Array<{ action: string; params: Record<string, unknown>; timestamp: string; durationMs: number }> }>(
+      "GET", "/v1/recording", undefined, sessionId,
+    );
+  }
+
+  // Observability
+  async metrics() {
+    return this.request<{ sessionsCreated: number; sessionsReleased: number; peakConcurrent: number; requestsServed: number; errorsCount: number; activeSessions: number; uptime: number }>(
+      "GET", "/v1/metrics",
+    );
+  }
+
+  async docs() {
+    return this.request<{ version: string; endpoints: number; categories: Record<string, unknown> }>("GET", "/v1/docs");
+  }
 }
