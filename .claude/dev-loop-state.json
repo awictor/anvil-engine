@@ -59,6 +59,7 @@
     {"persona": "security", "action": "improve", "description": "Added X-Request-Id header (monotonic counter req-N) to all responses + included in stderr logs. Enables request tracing, log correlation, and debugging production issues.", "at": "2026-06-08T10:55:00Z"},
     {"persona": "refactor", "action": "improve", "description": "Added proper TypeScript types field to package.json exports. Both '.' and './client' entries now have conditional exports with types + default. Library consumers get full IntelliSense for AnvilClient.", "at": "2026-06-08T10:57:00Z"},
     {"persona": "hardener", "action": "improve", "description": "Added explicit navigation timeout caps: navigate accepts body.timeout (max 60s), scrape/pdf capped at 60s. Prevents connection slot exhaustion from extremely slow pages holding goto indefinitely.", "at": "2026-06-08T10:59:00Z"},
-    {"persona": "security", "action": "harden", "description": "Filtered empty/non-string blockPatterns in intercept endpoint. Empty string '' matches all URLs via includes(), blocking ALL requests. Now filters to non-empty strings only.", "at": "2026-06-08T11:05:00Z"}
+    {"persona": "security", "action": "harden", "description": "Filtered empty/non-string blockPatterns in intercept endpoint. Empty string '' matches all URLs via includes(), blocking ALL requests. Now filters to non-empty strings only.", "at": "2026-06-08T11:05:00Z"},
+    {"persona": "refactor", "action": "release", "description": "Bumped version to 1.0.0 in package.json and /v1/docs response. Engine is feature-complete, production-hardened, fully tested. Ready for v1 release.", "at": "2026-06-08T11:08:00Z"}
   ]
 }

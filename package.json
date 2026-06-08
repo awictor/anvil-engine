@@ -1,6 +1,6 @@
 {
   "name": "anvil-engine",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Independent browser-as-a-service engine — zero third-party browser infra dependencies",
   "type": "module",
   "main": "dist/api.js",

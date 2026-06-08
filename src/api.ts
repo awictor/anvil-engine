@@ -695,7 +695,7 @@ const server = createServer(async (req, res) => {
     // GET /v1/docs
     if (method === "GET" && url.pathname === "/v1/docs") {
       json(res, 200, {
-        version: "0.1.0",
+        version: "1.0.0",
         endpoints: 30,
         categories: {
           sessions: [
