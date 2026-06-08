@@ -5,12 +5,15 @@
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
-  "needs_tests": [
+  "needs_tests": [],
+  "needs_review": [
     {
       "id": "feat-rate-limiting",
       "title": "Request rate limiting with configurable requests-per-minute",
       "completed_by": "builder",
-      "completed_at": "2026-06-08T09:38:00Z"
+      "completed_at": "2026-06-08T09:38:00Z",
+      "tested_by": "tester",
+      "tested_at": "2026-06-08T09:40:00Z"
     }
   ],
   "needs_review": [],
@@ -96,6 +99,7 @@
     {"persona": "reviewer", "action": "approve", "description": "feat-webhooks: correct fire-and-forget pattern, AbortController cleanup in finally, non-blocking at all 3 integration points, no sensitive data in payload, 19 tests. Approved.", "at": "2026-06-08T09:30:00Z"},
     {"persona": "hardener", "action": "improve", "description": "Added structured request logging: every non-OPTIONS request logs method, path, status code, and duration (ms) to stderr on response finish. Essential for production debugging and latency monitoring.", "at": "2026-06-08T09:32:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed rate limiting: token bucket per-IP, ANVIL_RATE_LIMIT_RPM env (0=disabled), 429 + Retry-After header, stale bucket cleanup every 60s, health endpoint exempt.", "at": "2026-06-08T09:35:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented rate limiting in src/rate-limiter.ts: RateLimiter class with token bucket (refill at rpm/60/s, burst=rpm), consume(clientId) returns allowed+retryAfterSec. Integrated before auth, per-IP (X-Forwarded-For), 429+Retry-After, health exempt, cleanup start/stop on init/shutdown.", "at": "2026-06-08T09:38:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented rate limiting in src/rate-limiter.ts: RateLimiter class with token bucket (refill at rpm/60/s, burst=rpm), consume(clientId) returns allowed+retryAfterSec. Integrated before auth, per-IP (X-Forwarded-For), 429+Retry-After, health exempt, cleanup start/stop on init/shutdown.", "at": "2026-06-08T09:38:00Z"},
+    {"persona": "tester", "action": "test", "description": "22 tests for rate limiting: RateLimiter class (construct/consume/allow/reject/retryAfterSec), per-client isolation, token refill (burst=rpm, rate=rpm/60), startCleanup/stopCleanup (idempotent, stale threshold), env var (0=null), 429 response (error msg/Retry-After/health exempt), IP resolution (XFF/remote/unknown). 318 total.", "at": "2026-06-08T09:40:00Z"}
   ]
 }
