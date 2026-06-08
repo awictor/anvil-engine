@@ -759,7 +759,8 @@ createCdpProxy(server, sessionManager);
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  process.stderr.write(`[anvil-engine] ${signal} — destroying ${sessionManager.size} sessions...\n`);
+  process.stderr.write(`[anvil-engine] ${signal} — stopping server, destroying ${sessionManager.size} sessions...\n`);
+  server.close();
   sessionManager.stopCleanup();
   if (rateLimiter) rateLimiter.stopCleanup();
   await sessionManager.destroyAll();
