@@ -43,6 +43,7 @@
     {"persona": "hardener", "action": "improve", "description": "Added ANVIL_HOST env var (default 0.0.0.0) for bind address control. Operators can set to 127.0.0.1 for local-only access. Startup log shows actual bind address. 8 env vars total.", "at": "2026-06-08T10:21:00Z"},
     {"persona": "reliability", "action": "improve", "description": "Added SIGKILL fallback in killBrowser: if Chrome doesn't exit within 3s of SIGTERM, force-kills with SIGKILL. Prevents zombie Chrome processes on Windows/hung Chrome.", "at": "2026-06-08T10:23:00Z"},
     {"persona": "architect", "action": "spec", "description": "Designed GET /v1/docs: self-documenting endpoint listing with method/path/description/params for all 29 endpoints, grouped by category, exempt from auth+rate-limit, includes version.", "at": "2026-06-08T10:25:00Z"},
-    {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/docs: static JSON response with all 30 endpoints documented, grouped by 7 categories (sessions/actions/content/network/recording/files/observability), exempt from auth+rate-limit. 30 endpoints total.", "at": "2026-06-08T10:27:00Z"}
+    {"persona": "builder", "action": "implement", "description": "Implemented GET /v1/docs: static JSON response with all 30 endpoints documented, grouped by 7 categories (sessions/actions/content/network/recording/files/observability), exempt from auth+rate-limit. 30 endpoints total.", "at": "2026-06-08T10:27:00Z"},
+    {"persona": "hardener", "action": "improve", "description": "Wrapped URL parsing in try/catch at request entry. Malformed URLs (null bytes, invalid encoding) now return 400 'Malformed URL' instead of crashing the handler with unhandled exception.", "at": "2026-06-08T10:30:00Z"}
   ]
 }

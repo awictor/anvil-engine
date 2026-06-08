@@ -47,7 +47,14 @@ const recordingStore = new Map<string, ActionEntry[]>();
 
 const server = createServer(async (req, res) => {
   const startTime = Date.now();
-  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  let url: URL;
+  try {
+    url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  } catch {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Malformed URL" }));
+    return;
+  }
   const method = req.method || "GET";
 
   res.on("finish", () => {
