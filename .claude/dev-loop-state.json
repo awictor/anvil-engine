@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "anvil-engine",
-  "description": "Independent browser-as-a-service — zero Steel/Browserbase dependency",
+  "description": "Independent browser-as-a-service engine",
   "personas": ["architect", "builder", "tester", "reviewer", "hardener", "reliability", "integration", "security", "refactor"],
   "backlog": [],
   "in_progress": [],
