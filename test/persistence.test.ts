@@ -8,6 +8,7 @@ import {
   toPersisted,
   loadPersisted,
   saveToDisk,
+  restoreSessions,
   type PersistedSession,
 } from "../src/persistence.js";
 
@@ -161,5 +162,54 @@ describe("disk I/O: saveToDisk / loadPersisted", () => {
     const path = tmpFile();
     saveToDisk(path, [], SAVED_AT);
     expect(loadPersisted(path)).toEqual([]);
+  });
+});
+
+describe("restoreSessions", () => {
+  it("re-creates each record and injects its cookies", async () => {
+    const created: PersistedSession["options"][] = [];
+    const setCalls: number[] = [];
+    const records = [sample(), { ...sample(), id: "sess-2", cookies: [] }];
+
+    const result = await restoreSessions(
+      records,
+      async (options) => { created.push(options); return { token: created.length }; },
+      async (_session, cookies) => { setCalls.push(cookies.length); },
+    );
+
+    expect(result).toEqual({ restored: 2, failed: 0 });
+    expect(created).toHaveLength(2);
+    // Only the first record has cookies, so setCookies is called once.
+    expect(setCalls).toEqual([2]);
+  });
+
+  it("isolates per-record failures (the failing create does not abort the rest)", async () => {
+    // The 2nd create call throws; the 1st and 3rd should still restore.
+    let createCall = 0;
+    const records = [sample(), { ...sample(), id: "sess-2" }, { ...sample(), id: "sess-3" }];
+    const result = await restoreSessions(
+      records,
+      async () => {
+        createCall++;
+        if (createCall === 2) throw new Error("launch failed");
+        return {};
+      },
+      async () => {},
+    );
+    expect(result).toEqual({ restored: 2, failed: 1 });
+  });
+
+  it("returns zero counts for an empty list", async () => {
+    const result = await restoreSessions([], async () => ({}), async () => {});
+    expect(result).toEqual({ restored: 0, failed: 0 });
+  });
+
+  it("a setCookies failure counts the record as failed", async () => {
+    const result = await restoreSessions(
+      [sample()],
+      async () => ({}),
+      async () => { throw new Error("inject failed"); },
+    );
+    expect(result).toEqual({ restored: 0, failed: 1 });
   });
 });

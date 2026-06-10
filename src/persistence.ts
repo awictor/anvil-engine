@@ -103,3 +103,28 @@ export function saveToDisk(path: string, sessions: PersistedSession[], savedAt: 
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, serializeSessions(sessions, savedAt));
 }
+
+/**
+ * Re-creates persisted sessions via injected callbacks (so this stays testable
+ * without launching Chrome). Each record is restored independently — a failure
+ * on one (e.g. browser launch error) is isolated and counted, never aborting the
+ * rest. Returns the restored/failed tallies for logging.
+ */
+export async function restoreSessions<S>(
+  persisted: PersistedSession[],
+  create: (options: LaunchOptions) => Promise<S>,
+  setCookies: (session: S, cookies: CookieParam[]) => Promise<unknown>,
+): Promise<{ restored: number; failed: number }> {
+  let restored = 0;
+  let failed = 0;
+  for (const record of persisted) {
+    try {
+      const session = await create(record.options);
+      if (record.cookies.length > 0) await setCookies(session, record.cookies);
+      restored++;
+    } catch {
+      failed++;
+    }
+  }
+  return { restored, failed };
+}

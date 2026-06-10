@@ -18,7 +18,7 @@ import { networkRoutes } from "./routes/network.js";
 import { recordingRoutes } from "./routes/recording.js";
 import { downloadRoutes } from "./routes/downloads.js";
 import { healthRoutes } from "./routes/health.js";
-import { toPersisted, saveToDisk, loadPersisted } from "./persistence.js";
+import { toPersisted, saveToDisk, loadPersisted, restoreSessions } from "./persistence.js";
 
 const logger = createLogger("app");
 
@@ -126,6 +126,15 @@ export function buildApp(config: Config): App {
       if (config.persistPath) {
         const restorable = loadPersisted(config.persistPath);
         logger.info("Session persistence enabled", { path: config.persistPath, restorable: restorable.length });
+        if (restorable.length > 0) {
+          // Restored sessions get fresh ids; options + cookies carry over.
+          const { restored, failed } = await restoreSessions(
+            restorable,
+            (options) => sessionManager.create(options),
+            (session, cookies) => actions.setCookies(session, cookies),
+          );
+          logger.info("Restored persisted sessions", { restored, failed });
+        }
       }
       sessionManager.startCleanup(config.sessionTimeoutMs);
       if (rateLimiter) rateLimiter.startCleanup();

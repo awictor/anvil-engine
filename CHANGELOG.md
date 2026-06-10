@@ -5,6 +5,13 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Session persistence: restore on startup** — when `ANVIL_PERSIST_PATH` points at
+  a saved file, the engine re-creates each persisted session on startup (fresh id,
+  original launch options) and re-injects its cookies, logging restored/failed
+  counts. New `restoreSessions` helper restores each record independently — one
+  launch/inject failure is isolated and counted, never aborting the rest. This
+  completes the session-persistence feature (serialize → save → load → restore).
+  4 new tests (476 total). No HTTP contract change.
 - **Session persistence: disk I/O (opt-in)** — new `ANVIL_PERSIST_PATH` env var
   (unset = disabled, no writes). On graceful shutdown the engine gathers each live
   session's cookies (best-effort) and writes serialized session metadata to the

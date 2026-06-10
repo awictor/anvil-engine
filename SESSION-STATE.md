@@ -1,14 +1,17 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 472 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
+v1.0.0 | 30 endpoints | 476 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
 
 ## Last Completed
-- Session persistence (disk I/O, opt-in): `ANVIL_PERSIST_PATH` env (unset =
-  disabled). app.stop() gathers live-session cookies (best-effort) + writes
-  serialized metadata; app.start() logs restorable count. loadPersisted/saveToDisk
-  helpers (missing/garbage file → []). Re-creation on startup is a follow-up. 5
-  tests (472 total). No HTTP contract change.
+- Session persistence COMPLETE: restore on startup. When ANVIL_PERSIST_PATH has a
+  saved file, app.start() re-creates each session (fresh id, original options) +
+  re-injects cookies, logging restored/failed. New restoreSessions helper isolates
+  per-record failures. Full feature: serialize → save → load → restore. 4 tests
+  (476 total).
+- Session persistence (disk I/O, opt-in): `ANVIL_PERSIST_PATH` env. app.stop()
+  writes serialized metadata + cookies; app.start() logs restorable count.
+  loadPersisted/saveToDisk (missing/garbage file → []). 5 tests.
 - Session persistence (serialization layer): `src/persistence.ts` — pure
   toPersisted/serializeSessions/deserializeSessions over a versioned JSON envelope.
   Corruption-tolerant deserialize. 10 tests.
@@ -48,25 +51,22 @@ v1.0.0 | 30 endpoints | 472 tests (+6 gated E2E with real Chrome) | MCP server (
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
-   - Success: opt-in flag/env; on graceful shutdown serialize session list + cookies to disk; on startup offer to restore; round-trip test (serialize → deserialize → cookies match). No always-on disk writes.
-   - DONE: pure serialization layer (`src/persistence.ts`) + 10 round-trip/tolerance tests.
-   - DONE: disk I/O + opt-in `ANVIL_PERSIST_PATH`; save on shutdown, load+log on startup; loadPersisted/saveToDisk helpers + 5 tests.
-   - NEXT (final sub-task): re-create persisted sessions on startup. In app.start(), when persistPath is set, loadPersisted → for each record, sessionManager.create(record.options) then actions.setCookies(session, record.cookies). Log restored count. Wrap each restore in try/catch so one failure doesn't abort the rest. Add a test (can use a fake/launch-stubbed SessionManager, or gate a real-Chrome restore in the E2E suite). Then mark this backlog item fully DONE.
-
-3. **Multi-tab / page support** — Address multiple pages within one session.
+1. **Multi-tab / page support** — Address multiple pages within one session.
    - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.
+   - First actionable sub-task: add SessionActions methods listPages/openPage/closePage (over the cached browser's pages()) with E2E coverage, BEFORE adding routes — keeps the service layer ahead of the HTTP surface.
 
-4. **Browser contexts** — Isolated incognito contexts within one browser process.
+2. **README + API reference** — Make the repo presentable and usable.
+   - Success: top-level README.md (what/why/quickstart/run-without-docker/Docker/env vars table — INCLUDING ANVIL_PERSIST_PATH with a note that cookies are stored plaintext at that path); API reference derived from /v1/docs; SDK (`client.ts`) usage examples; link to docs/MCP.md; CHANGELOG already seeded.
+
+3. **Browser contexts** — Isolated incognito contexts within one browser process.
    - Success: route + SessionActions support for creating/using/closing a context; isolation test (cookies in context A invisible to B). Contract updates in same iteration.
 
-5. **README + API reference** — Make the repo presentable and usable.
-   - Success: top-level README.md (what/why/quickstart/run-without-docker/Docker/env vars table); API reference derived from /v1/docs; SDK (`client.ts`) usage examples that actually run; CHANGELOG.md seeded with v1.0.0 history.
-
-6. **Live session view** — Read-only view into a running session.
+4. **Live session view** — Read-only view into a running session.
    - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.
 
-7. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+5. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
+
+6. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).
