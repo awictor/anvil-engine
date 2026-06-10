@@ -61,6 +61,8 @@ describe("buildMcpServer", () => {
     expect(result.tools.map((t: { name: string }) => t.name)).toEqual([
       "create_session",
       "navigate",
+      "scrape",
+      "screenshot",
       "release",
     ]);
     for (const t of result.tools) {

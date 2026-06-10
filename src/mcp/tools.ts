@@ -8,8 +8,12 @@ import { type SessionActions } from "../actions.js";
  * duplicated here. A stdio/HTTP MCP transport wraps this registry separately.
  */
 
+export type McpContent =
+  | { type: "text"; text: string }
+  | { type: "image"; data: string; mimeType: string };
+
 export interface McpToolResult {
-  content: Array<{ type: "text"; text: string }>;
+  content: McpContent[];
   isError?: boolean;
 }
 
@@ -35,6 +39,10 @@ function text(value: unknown): McpToolResult {
 
 function error(message: string): McpToolResult {
   return { content: [{ type: "text", text: message }], isError: true };
+}
+
+function image(data: string, mimeType: string): McpToolResult {
+  return { content: [{ type: "image", data, mimeType }] };
 }
 
 type Resolved =
@@ -103,6 +111,51 @@ export function createTools(deps: McpDeps): McpTool[] {
           timeout: args.timeout as number | undefined,
         });
         return text(result);
+      },
+    },
+    {
+      name: "scrape",
+      description: "Navigate to a URL and extract its content as text or html. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "http(s) URL to load" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+          format: { type: "string", description: "'text' (default) or 'html'" },
+          waitForSelector: { type: "string", description: "Optional selector to wait for before extracting" },
+        },
+        required: ["url"],
+      },
+      handler: async (args) => {
+        const url = args.url;
+        if (typeof url !== "string" || !url) return error("url must be a non-empty string");
+        if (/^(file|javascript|data):/i.test(url)) return error("Blocked protocol: only http/https allowed");
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const result = await deps.actions.scrape(r.session, {
+          url,
+          format: args.format as string | undefined,
+          waitForSelector: args.waitForSelector as string | undefined,
+        });
+        return text(result);
+      },
+    },
+    {
+      name: "screenshot",
+      description: "Capture a PNG screenshot of the session's current page, returned as a base64 image.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+          fullPage: { type: "boolean", description: "Capture the full scrollable page (default false)" },
+        },
+      },
+      handler: async (args) => {
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const bytes = await deps.actions.screenshot(r.session, args.fullPage === true);
+        const base64 = Buffer.from(bytes).toString("base64");
+        return image(base64, "image/png");
       },
     },
     {

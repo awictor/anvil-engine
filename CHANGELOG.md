@@ -5,6 +5,12 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP tools: scrape + screenshot** — the MCP tool set grows from 3 to 5.
+  `scrape` returns extracted text/html (with the same file/javascript/data
+  protocol blocking as the HTTP route); `screenshot` returns a base64
+  `image/png` content block (MCP-native image type). Both delegate to existing
+  SessionActions methods. `McpContent` widened to a text|image union
+  (backward-compatible). 4 new dispatch tests (444 total). No HTTP contract change.
 - **MCP stdio transport** — `src/mcp/server.ts` wires the tool registry into a
   low-level MCP `Server` with `tools/list` + `tools/call` handlers over
   `StdioServerTransport`, plus an `mcp` npm script (`tsx src/mcp/server.ts`).

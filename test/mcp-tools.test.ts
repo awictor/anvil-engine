@@ -38,6 +38,15 @@ function makeDeps(overrides: Partial<{ active: unknown; sessions: Map<string, un
       calls.push(`navigate:${params.url}`);
       return { url: params.url, title: "Fake Title" };
     },
+    async scrape(_session: unknown, params: { url: string; format?: string }) {
+      calls.push(`scrape:${params.url}:${params.format ?? "text"}`);
+      return { content: "Hello", title: "Fake Title", url: params.url };
+    },
+    async screenshot(_session: unknown, fullPage: boolean) {
+      calls.push(`screenshot:${fullPage}`);
+      // PNG magic bytes so the base64 is verifiable
+      return new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    },
   } as unknown as McpDeps["actions"];
 
   return { deps: { sessionManager, actions }, calls };
@@ -48,7 +57,7 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["create_session", "navigate", "release"]);
+    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "release"]);
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
       expect(tool.inputSchema.type).toBe("object");
@@ -114,6 +123,49 @@ describe("dispatchTool", () => {
     const res = await dispatchTool(tools, "navigate", { url: "https://example.com", sessionId: "ghost" });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("not found");
+  });
+
+  it("scrape delegates to SessionActions.scrape and returns content", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "scrape", { url: "https://example.com", format: "html" });
+    expect(calls).toContain("scrape:https://example.com:html");
+    const block = res.content[0];
+    expect(block.type).toBe("text");
+    if (block.type === "text") {
+      expect(JSON.parse(block.text)).toMatchObject({ content: "Hello", url: "https://example.com" });
+    }
+  });
+
+  it("scrape rejects blocked protocols", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "scrape", { url: "data:text/html,evil" });
+    expect(res.isError).toBe(true);
+  });
+
+  it("screenshot returns a base64 image content block", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "screenshot", { fullPage: true });
+    expect(calls).toContain("screenshot:true");
+    const block = res.content[0];
+    expect(block.type).toBe("image");
+    if (block.type === "image") {
+      expect(block.mimeType).toBe("image/png");
+      // base64 of PNG magic bytes [0x89,0x50,0x4e,0x47]
+      expect(Buffer.from(block.data, "base64").subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    }
+  });
+
+  it("screenshot with no active session returns error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const res = await dispatchTool(tools, "screenshot", {});
+    expect(res.isError).toBe(true);
   });
 
   it("release destroys the active session", async () => {
