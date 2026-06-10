@@ -4,9 +4,11 @@
 v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
-- Persistence round-trip E2E: gated real-Chrome test proves serialize→save
-  (shutdown)→load→restore (startup) across two app instances sharing a persist
-  file; a cookie set pre-shutdown survives into the restored session. 16 E2E total.
+- Repo hygiene: added .gitignore + untracked node_modules (7105 files) and dist
+  (54) via git rm --cached (files kept on disk). Working tree now clean; installs
+  no longer churn git. dist/api.js still on disk (docker.test.ts green). 489 tests.
+- Persistence round-trip E2E: gated real-Chrome test proves serialize→save→load→
+  restore across two app instances; cookie survives into restored session. 16 E2E.
 - docs/MCP.md updated to 13 tools: added list_pages/open_page/close_page rows +
   corrected count. Docs-only.
 - MCP page tools: added list_pages/open_page/close_page to createTools (13 tools).
@@ -79,11 +81,13 @@ v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs AND bloat the repo on a disk that's near-full. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. Promoted above feature work because of the disk-pressure Known Issue. Docs-/config-only on the source side; no tsc/test risk, but it touches many tracked paths — its own isolated iteration.
+1. **Investigate per-session temp/download dir reclamation** — the disk-pressure Known Issue suspects the engine leaves temp dirs behind. session.ts destroy() rmSync's the download dir, but verify: (a) does every session create exactly one tmp download dir and is it always removed on destroy/timeout? (b) are crash-relaunched browsers' old dirs orphaned? Add a unit/integration test asserting the download dir is gone after destroy. Service-/test-only; no contract change. (Real engine hardening + helps the disk issue.)
 
-2. **Persistence follow-up (b)** — consider preserving session ids across restore (currently fresh ids on restart). Only worth doing if a client depends on stable ids; otherwise close as won't-do. Low priority.
+2. **Live session view: MJPEG streaming** — upgrade /v1/view (or add /v1/view/stream) to a multipart/x-mixed-replace JPEG stream. CAUTION: holds a connection open — must respect session timeout + in-flight refcount, and bound frame rate. Design the lifecycle before coding. Contract-changing if a new endpoint.
 
-3. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+3. **Persistence follow-up (b)** — consider preserving session ids across restore (currently fresh ids on restart). Only worth doing if a client depends on stable ids; otherwise close as won't-do. Low priority.
+
+4. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).

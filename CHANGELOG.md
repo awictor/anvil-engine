@@ -4,6 +4,13 @@ All notable changes to the Anvil Engine are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **Repo hygiene: gitignore node_modules + dist** — added `.gitignore` and
+  untracked 7105 `node_modules` files + 54 `dist` files from git via
+  `git rm -r --cached` (working files retained on disk). Installs/builds no longer
+  produce huge noisy diffs and the repo no longer carries dependencies. Verified
+  `dist/api.js` remains on disk (docker.test.ts green), tsc clean, 489 tests pass.
+
 ### Added
 - **Session persistence: real-Chrome round-trip E2E** — a gated test proves the
   full serialize → save (shutdown) → load → restore (startup) path across two
