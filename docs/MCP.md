@@ -70,8 +70,8 @@ The variables that matter:
 
 ## Tools
 
-10 tools (core parity with the REST API). Every tool targets the **active** session
-unless an explicit `sessionId` is given.
+13 tools. Every tool targets the **active** session unless an explicit
+`sessionId` is given.
 
 | Tool | Required args | Optional args | Returns |
 |---|---|---|---|
@@ -84,11 +84,14 @@ unless an explicit `sessionId` is given.
 | `evaluate` | `script` | `sessionId` | the script's return value (script ≤ 100 KB) |
 | `get_cookies` | — | `sessionId` | `{ cookies }` |
 | `set_cookies` | `cookies` (array) | `sessionId` | `{ injected }` |
+| `list_pages` | — | `sessionId` | `{ pages: [{ index, url, title }] }` |
+| `open_page` | — | `url`, `sessionId` | `{ index, url }` |
+| `close_page` | `index` | `sessionId` | `{ closed, remaining }` |
 | `release` | — | `sessionId` | `{ id, status: "released" }` |
 
 ### Notes
 
-- `navigate` and `scrape` block `file:`, `javascript:`, and `data:` URLs.
+- `navigate`, `scrape`, and `open_page` block `file:`, `javascript:`, and `data:` URLs.
 - `evaluate` enforces `ANVIL_EVALUATE_TIMEOUT_MS` via CDP `Runtime.terminateExecution`,
   so a runaway script is killed and the session stays usable.
 - A typical flow: `create_session` → `navigate` → (`scrape` / `click` / `type` /

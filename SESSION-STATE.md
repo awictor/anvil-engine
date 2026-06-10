@@ -4,9 +4,10 @@
 v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- docs/MCP.md updated to 13 tools: added list_pages/open_page/close_page rows +
+  corrected count (was stale at 10). Docs-only; 489 tests unchanged.
 - MCP page tools: added list_pages/open_page/close_page to createTools (13 tools).
-  open_page blocks file/js/data; close_page requires non-negative int index.
-  Delegate to SessionActions. 4 dispatch tests (489 total). No HTTP contract change.
+  open_page blocks file/js/data; close_page requires non-negative int index. 4 tests.
 - Live session view COMPLETE (single-frame): GET /v1/view serves a JPEG
   (Content-Type image/jpeg, optional ?quality=). Contract 36→37 with full
   consistency updates. 15 E2E total.
@@ -75,13 +76,11 @@ v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Update docs/MCP.md to 13 tools** — the MCP doc still says "10 tools" and lists only the original set. Add list_pages/open_page/close_page to the tool table and fix the count. Docs-only, single iteration. (Quick + keeps docs honest now that MCP grew.)
+1. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
 
-2. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
+2. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
 
-3. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
-
-4. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+3. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).

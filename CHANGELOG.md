@@ -4,6 +4,10 @@ All notable changes to the Anvil Engine are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **docs/MCP.md updated to 13 tools** — added the `list_pages`/`open_page`/
+  `close_page` rows and corrected the tool count (was stale at 10).
+
 ### Added
 - **MCP page tools** — the MCP tool set grows from 10 to 13: `list_pages`,
   `open_page` (optional url, blocks file/js/data), `close_page` (non-negative
