@@ -127,3 +127,48 @@ describe.skipIf(!chromeAvailable())("e2e: real Chrome lifecycle", () => {
     expect(gone.status).toBe(404);
   }, 30000);
 });
+
+describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", () => {
+  let app: App;
+
+  beforeAll(async () => {
+    app = buildApp(loadConfig({ ...process.env, ANVIL_API_KEY: "", ANVIL_RATE_LIMIT_RPM: "" }));
+  });
+
+  afterAll(async () => {
+    await app.stop();
+  }, 30000);
+
+  it("lists, opens, and closes pages within a session", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+
+    // A fresh session has exactly one page (about:blank).
+    let pages = await app.actions.listPages(session);
+    expect(pages).toHaveLength(1);
+    expect(pages[0].index).toBe(0);
+
+    // Open a second page.
+    const opened = await app.actions.openPage(session, "about:blank");
+    expect(opened.index).toBeGreaterThanOrEqual(1);
+
+    pages = await app.actions.listPages(session);
+    expect(pages).toHaveLength(2);
+
+    // Close the second page; one remains.
+    const closed = await app.actions.closePage(session, opened.index);
+    expect(closed.remaining).toBe(1);
+    pages = await app.actions.listPages(session);
+    expect(pages).toHaveLength(1);
+
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
+
+  it("openPage blocks dangerous protocols and closePage refuses the last page", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+
+    await expect(app.actions.openPage(session, "file:///etc/passwd")).rejects.toThrow(/Blocked protocol/);
+    await expect(app.actions.closePage(session, 0)).rejects.toThrow(/last remaining page/);
+
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
+});

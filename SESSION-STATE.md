@@ -1,14 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 476 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
+v1.0.0 | 30 endpoints | 476 tests (+8 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
 
 ## Last Completed
+- Multi-page/tabs (service layer): SessionActions listPages/openPage/closePage over
+  the cached browser. openPage blocks file/js/data; closePage validates index +
+  refuses last page. 2 gated-E2E tests. Routes are the next sub-task. No contract change.
 - Session persistence COMPLETE: restore on startup. When ANVIL_PERSIST_PATH has a
   saved file, app.start() re-creates each session (fresh id, original options) +
-  re-injects cookies, logging restored/failed. New restoreSessions helper isolates
-  per-record failures. Full feature: serialize → save → load → restore. 4 tests
-  (476 total).
+  re-injects cookies. restoreSessions isolates per-record failures. 4 tests.
 - Session persistence (disk I/O, opt-in): `ANVIL_PERSIST_PATH` env. app.stop()
   writes serialized metadata + cookies; app.start() logs restorable count.
   loadPersisted/saveToDisk (missing/garbage file → []). 5 tests.
@@ -53,7 +54,8 @@ Each item is done when ALL success criteria pass. One item per iteration.
 
 1. **Multi-tab / page support** — Address multiple pages within one session.
    - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.
-   - First actionable sub-task: add SessionActions methods listPages/openPage/closePage (over the cached browser's pages()) with E2E coverage, BEFORE adding routes — keeps the service layer ahead of the HTTP surface.
+   - DONE: SessionActions listPages/openPage/closePage + 2 gated-E2E tests.
+   - NEXT (actionable sub-task): add a `src/routes/pages.ts` module wired in app.ts with GET /v1/pages (list), POST /v1/pages (open, optional url), DELETE /v1/pages/:index (close). This ADDS 3 endpoints → bump /v1/docs count from 30 to 33 AND update the docs `files`/new `pages` category, `test/integration.test.ts` (hard-coded 30 → 33 + endpoint list), and add the 3 SDK methods to `src/client.ts`. Add integration tests for validation/404 paths (no Chrome needed) + an E2E that drives the routes. This is the contract-changing iteration — do all consistency updates together.
 
 2. **README + API reference** — Make the repo presentable and usable.
    - Success: top-level README.md (what/why/quickstart/run-without-docker/Docker/env vars table — INCLUDING ANVIL_PERSIST_PATH with a note that cookies are stored plaintext at that path); API reference derived from /v1/docs; SDK (`client.ts`) usage examples; link to docs/MCP.md; CHANGELOG already seeded.

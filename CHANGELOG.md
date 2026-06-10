@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Multi-page / tabs: service layer** — `SessionActions` gains `listPages`,
+  `openPage` (blocks file/js/data protocols), and `closePage` (validates index,
+  refuses to close the last page), operating over the session's cached browser.
+  Service-layer first; HTTP routes follow next. 2 new gated-E2E tests with real
+  Chrome. No HTTP contract change yet.
 - **Session persistence: restore on startup** — when `ANVIL_PERSIST_PATH` points at
   a saved file, the engine re-creates each persisted session on startup (fresh id,
   original launch options) and re-injects its cookies, logging restored/failed

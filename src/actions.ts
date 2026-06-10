@@ -189,6 +189,41 @@ export class SessionActions {
     return cookies.length;
   }
 
+  // --- multi-page / tabs ---
+
+  async listPages(session: Session): Promise<Array<{ index: number; url: string; title: string }>> {
+    return this.run(session, async (_page, browser) => {
+      const pages = await browser.pages();
+      return Promise.all(
+        pages.map(async (p, index) => ({ index, url: p.url(), title: await p.title().catch(() => "") })),
+      );
+    });
+  }
+
+  async openPage(session: Session, url?: string): Promise<{ index: number; url: string }> {
+    if (url && /^(file|javascript|data):/i.test(url)) {
+      throw new Error("Blocked protocol: only http/https allowed");
+    }
+    return this.run(session, async (_page, browser) => {
+      const newPage = await browser.newPage();
+      if (url) {
+        await newPage.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+      }
+      const pages = await browser.pages();
+      return { index: pages.indexOf(newPage), url: newPage.url() };
+    });
+  }
+
+  async closePage(session: Session, index: number): Promise<{ closed: number; remaining: number }> {
+    return this.run(session, async (_page, browser) => {
+      const pages = await browser.pages();
+      if (index < 0 || index >= pages.length) throw new Error(`Page index ${index} out of range`);
+      if (pages.length === 1) throw new Error("Cannot close the last remaining page");
+      await pages[index].close();
+      return { closed: index, remaining: pages.length - 1 };
+    });
+  }
+
   // --- element actions ---
 
   async click(session: Session, params: { selector: string; button?: string; clickCount?: number }): Promise<void> {
