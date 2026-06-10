@@ -204,3 +204,38 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
     await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
   }, 60000);
 });
+
+describe.skipIf(!chromeAvailable())("e2e: browser contexts (SessionActions)", () => {
+  let app: App;
+
+  beforeAll(async () => {
+    app = buildApp(loadConfig({ ...process.env, ANVIL_API_KEY: "", ANVIL_RATE_LIMIT_RPM: "" }));
+  });
+
+  afterAll(async () => {
+    await app.stop();
+  }, 30000);
+
+  it("creates, lists, and closes isolated contexts", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+
+    expect(app.actions.listContexts(session).contextIds).toHaveLength(0);
+
+    const a = await app.actions.createContext(session);
+    const b = await app.actions.createContext(session);
+    expect(a.contextId).not.toBe(b.contextId);
+    expect(app.actions.listContexts(session).contextIds).toHaveLength(2);
+
+    const closed = await app.actions.closeContext(session, a.contextId);
+    expect(closed.remaining).toBe(1);
+    expect(app.actions.listContexts(session).contextIds).toEqual([b.contextId]);
+
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
+
+  it("closeContext rejects an unknown context id", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+    await expect(app.actions.closeContext(session, "nope")).rejects.toThrow(/not found/);
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
+});

@@ -4,10 +4,12 @@
 v1.0.0 | 33 endpoints | 480 tests (+9 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
 
 ## Last Completed
+- Browser contexts (service layer): SessionActions createContext/listContexts/
+  closeContext over per-session BrowserContext Map (generated ids), cleaned up on
+  destroy. closeContext validates id. 2 gated-E2E tests. Routes are next. No contract change.
 - README: top-level README.md — install, run (with/without Docker), MCP pointer,
-  quickstart (curl + AnvilClient SDK), 33-endpoint overview, full env-var table
-  (incl. ANVIL_PERSIST_PATH plaintext-cookie caveat), testing. Docs-only; all facts
-  verified against source. 480 tests unchanged.
+  quickstart, 33-endpoint overview, env-var table (incl. ANVIL_PERSIST_PATH
+  plaintext-cookie caveat), testing. Docs-only; verified against source.
 - Multi-page/tabs COMPLETE (HTTP routes): /v1/pages GET (list) + POST (open) +
   DELETE /v1/pages/:index (close). Contract 30→33: docs count + pages category,
   integration.test.ts (both count assertions), 3 SDK client methods. 4 integration
@@ -61,6 +63,9 @@ Each item is done when ALL success criteria pass. One item per iteration.
 
 1. **Browser contexts** — Isolated incognito contexts within one browser process.
    - Success: route + SessionActions support for creating/using/closing a context; isolation test (cookies in context A invisible to B). Contract updates in same iteration.
+   - DONE: SessionActions createContext/listContexts/closeContext + 2 gated-E2E tests + destroy cleanup.
+   - NEXT (actionable sub-task): add `src/routes/contexts.ts` — GET /v1/contexts (list), POST /v1/contexts (create), DELETE /v1/contexts/:id (close). Contract 33→36: bump /v1/docs count + new `contexts` category, both docs-count assertions (integration.test.ts + integration/server.test.ts), 3 SDK client methods. Integration tests (no-Chrome validation/no-session paths) + 1 HTTP-driven E2E. Do all consistency updates together.
+   - THEN (completes the item): a cookie-isolation E2E — set a cookie in one context, confirm a page in a second context doesn't see it. This needs context-scoped navigation; may require a context-targeting param on actions. Scope that when reached.
 
 2. **Live session view** — Read-only view into a running session.
    - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.

@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Browser contexts: service layer** — `SessionActions` gains `createContext`,
+  `listContexts`, and `closeContext`, tracking isolated `BrowserContext`s per
+  session in a Map (keyed by generated id), cleaned up on session destroy.
+  `closeContext` validates the id. Service-layer first; HTTP routes follow.
+  2 new gated-E2E tests with real Chrome. No HTTP contract change yet.
 - **README** — top-level `README.md`: what/why, install, run (with/without Docker),
   MCP server pointer, quickstart (curl + `AnvilClient` SDK), a 33-endpoint API
   overview, a full env-var table (including the `ANVIL_PERSIST_PATH` plaintext-

@@ -1,4 +1,5 @@
-import type { Browser, Page, HTTPResponse, HTTPRequest, Cookie, CookieParam } from "puppeteer-core";
+import type { Browser, BrowserContext, Page, HTTPResponse, HTTPRequest, Cookie, CookieParam } from "puppeteer-core";
+import { randomUUID } from "node:crypto";
 import { launchBrowser, killBrowser } from "./launcher.js";
 import { type Session, type SessionManager } from "./session.js";
 import { isCrashError } from "./browser-helper.js";
@@ -39,6 +40,8 @@ export class SessionActions {
   private harListeners = new Map<string, { page: Page; listener: (response: HTTPResponse) => void }>();
   private interceptListeners = new Map<string, { page: Page; listener: (request: HTTPRequest) => void }>();
   private recordingStore = new Map<string, ActionEntry[]>();
+  // Per-session isolated browser contexts, keyed by a generated contextId.
+  private contexts = new Map<string, Map<string, BrowserContext>>();
 
   constructor(
     private sessionManager: SessionManager,
@@ -224,6 +227,36 @@ export class SessionActions {
     });
   }
 
+  // --- isolated browser contexts ---
+
+  async createContext(session: Session): Promise<{ contextId: string }> {
+    return this.run(session, async (_page, browser) => {
+      const context = await browser.createBrowserContext();
+      const contextId = randomUUID();
+      let byId = this.contexts.get(session.id);
+      if (!byId) {
+        byId = new Map();
+        this.contexts.set(session.id, byId);
+      }
+      byId.set(contextId, context);
+      return { contextId };
+    });
+  }
+
+  listContexts(session: Session): { contextIds: string[] } {
+    const byId = this.contexts.get(session.id);
+    return { contextIds: byId ? [...byId.keys()] : [] };
+  }
+
+  async closeContext(session: Session, contextId: string): Promise<{ closed: string; remaining: number }> {
+    const byId = this.contexts.get(session.id);
+    const context = byId?.get(contextId);
+    if (!byId || !context) throw new Error(`Context ${contextId} not found`);
+    await context.close();
+    byId.delete(contextId);
+    return { closed: contextId, remaining: byId.size };
+  }
+
   // --- element actions ---
 
   async click(session: Session, params: { selector: string; button?: string; clickCount?: number }): Promise<void> {
@@ -404,6 +437,8 @@ export class SessionActions {
     }
     this.harStore.delete(sessionId);
     this.recordingStore.delete(sessionId);
+    // Drop tracked contexts; they die with the browser, so just clear the refs.
+    this.contexts.delete(sessionId);
     const browser = this.connections.get(sessionId);
     if (browser) {
       this.connections.delete(sessionId);
