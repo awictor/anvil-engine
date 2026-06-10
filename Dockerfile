@@ -29,6 +29,6 @@ COPY dist/ ./dist/
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
-  CMD node -e "fetch('http://localhost:3000/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://localhost:3000/v1/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
 CMD ["node", "dist/api.js"]

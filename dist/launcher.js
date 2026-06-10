@@ -33,6 +33,57 @@ let nextPort = 9222;
 export function getNextCdpPort() {
     return nextPort++;
 }
+const PRIVATE_HOST_PATTERNS = [
+    /^localhost$/i,
+    /\.localhost$/i,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2[0-9]|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^0\.0\.0\.0$/,
+    /^::1$/,
+    /^::$/,
+    /^f[cd][0-9a-f]{2}:/i,
+    /^fe80:/i,
+];
+const ALLOWED_PROXY_SCHEMES = new Set(["http:", "https:", "socks:", "socks4:", "socks5:"]);
+function extractBareHost(proxy) {
+    if (proxy.startsWith("[")) {
+        const end = proxy.indexOf("]");
+        return end > 0 ? proxy.slice(1, end) : proxy;
+    }
+    return proxy.split(":")[0];
+}
+export function validateProxyUrl(proxy) {
+    if (process.env.ANVIL_ALLOW_PRIVATE_PROXY === "true")
+        return;
+    let hostname;
+    try {
+        const url = new URL(proxy);
+        if (ALLOWED_PROXY_SCHEMES.has(url.protocol)) {
+            hostname = url.hostname;
+        }
+        else if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(proxy)) {
+            throw new Error(`Unsupported proxy scheme: ${url.protocol} (allowed: http, https, socks, socks4, socks5)`);
+        }
+        else {
+            // Bare host:port that still parses as a URL (e.g. "proxy.example.com:8080")
+            hostname = extractBareHost(proxy);
+        }
+    }
+    catch (err) {
+        if (err instanceof Error && err.message.startsWith("Unsupported proxy scheme"))
+            throw err;
+        hostname = extractBareHost(proxy);
+    }
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    for (const pattern of PRIVATE_HOST_PATTERNS) {
+        if (pattern.test(host)) {
+            throw new Error(`Proxy host "${host}" is private or internal and not allowed. Set ANVIL_ALLOW_PRIVATE_PROXY=true to override.`);
+        }
+    }
+}
 export async function launchBrowser(options = {}) {
     const chromePath = findChromePath();
     const cdpPort = getNextCdpPort();
@@ -66,6 +117,7 @@ export async function launchBrowser(options = {}) {
     }
     let proxyCredentials;
     if (options.proxy) {
+        validateProxyUrl(options.proxy);
         try {
             const proxyUrl = new URL(options.proxy);
             if (proxyUrl.username && proxyUrl.password) {
@@ -128,17 +180,35 @@ async function waitForCdp(port, timeoutMs) {
     throw new Error(`Chrome CDP did not start on port ${port} within ${timeoutMs}ms`);
 }
 export function killBrowser(proc) {
-    try {
-        proc.process.kill("SIGTERM");
-    }
-    catch {
-        // Already dead
-    }
-    setTimeout(() => {
-        try {
-            if (!proc.process.killed)
-                proc.process.kill("SIGKILL");
+    return new Promise((resolve) => {
+        if (proc.process.exitCode !== null || proc.process.signalCode !== null) {
+            resolve();
+            return;
         }
-        catch { }
-    }, 3000);
+        let settled = false;
+        const finish = () => {
+            if (settled)
+                return;
+            settled = true;
+            clearTimeout(killTimer);
+            resolve();
+        };
+        proc.process.once("exit", finish);
+        proc.process.once("close", finish);
+        const killTimer = setTimeout(() => {
+            try {
+                if (!proc.process.killed)
+                    proc.process.kill("SIGKILL");
+            }
+            catch { }
+            // Give SIGKILL a moment; resolve regardless so callers never hang
+            setTimeout(finish, 1000);
+        }, 3000);
+        try {
+            proc.process.kill("SIGTERM");
+        }
+        catch {
+            finish();
+        }
+    });
 }

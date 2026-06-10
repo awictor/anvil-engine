@@ -22,5 +22,6 @@ export interface BrowserProcess {
     downloadDir?: string;
 }
 export declare function getNextCdpPort(): number;
+export declare function validateProxyUrl(proxy: string): void;
 export declare function launchBrowser(options?: LaunchOptions): Promise<BrowserProcess>;
-export declare function killBrowser(proc: BrowserProcess): void;
+export declare function killBrowser(proc: BrowserProcess): Promise<void>;

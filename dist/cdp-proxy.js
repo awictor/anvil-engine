@@ -1,12 +1,23 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { createLogger } from "./logger.js";
+const logger = createLogger("cdp-proxy");
 export function createCdpProxy(server, sessionManager) {
     const wss = new WebSocketServer({ server, path: "/cdp" });
     const apiKey = process.env.ANVIL_API_KEY || "";
+    const requireAuth = process.env.ANVIL_REQUIRE_CDP_AUTH === "true";
+    if (!apiKey) {
+        logger.warn(requireAuth
+            ? "ANVIL_REQUIRE_CDP_AUTH=true but no ANVIL_API_KEY set — all CDP connections will be rejected"
+            : "CDP proxy running without authentication (no ANVIL_API_KEY set)");
+    }
     wss.on("connection", (clientWs, req) => {
         const params = new URL(req.url || "/", "http://localhost").searchParams;
-        if (apiKey && params.get("token") !== apiKey) {
-            clientWs.close(4001, "Unauthorized: invalid or missing ?token= parameter");
-            return;
+        if (apiKey || requireAuth) {
+            const token = params.get("token");
+            if (!apiKey || typeof token !== "string" || token.length === 0 || token !== apiKey) {
+                clientWs.close(4001, "Unauthorized: invalid or missing ?token= parameter");
+                return;
+            }
         }
         const sessionId = params.get("session");
         if (!sessionId) {

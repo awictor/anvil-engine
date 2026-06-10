@@ -22,12 +22,10 @@ export class BrowserPool {
         return Promise.race([launchBrowser(options), timeout]);
     }
     release(proc) {
-        killBrowser(proc);
+        void killBrowser(proc);
     }
     async shutdown() {
-        for (const proc of this.warm) {
-            killBrowser(proc);
-        }
+        await Promise.all(this.warm.map((proc) => killBrowser(proc)));
         this.warm = [];
     }
     get available() {
