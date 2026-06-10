@@ -1,8 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import { rmSync, writeFileSync, mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   serializeSessions,
   deserializeSessions,
   toPersisted,
+  loadPersisted,
+  saveToDisk,
   type PersistedSession,
 } from "../src/persistence.js";
 
@@ -115,5 +120,46 @@ describe("toPersisted", () => {
     const persisted = toPersisted(session, []);
     const restored = deserializeSessions(serializeSessions([persisted], SAVED_AT));
     expect(restored[0].id).toBe("s");
+  });
+});
+
+describe("disk I/O: saveToDisk / loadPersisted", () => {
+  let dir: string;
+  const made: string[] = [];
+
+  function tmpFile(): string {
+    dir = mkdtempSync(join(tmpdir(), "anvil-persist-"));
+    made.push(dir);
+    return join(dir, "nested", "sessions.json");
+  }
+
+  afterEach(() => {
+    for (const d of made) {
+      try { rmSync(d, { recursive: true, force: true }); } catch {}
+    }
+    made.length = 0;
+  });
+
+  it("round-trips through a real file (creating parent dirs)", () => {
+    const path = tmpFile();
+    saveToDisk(path, [sample()], SAVED_AT);
+    expect(loadPersisted(path)).toEqual([sample()]);
+  });
+
+  it("loadPersisted returns [] for a missing file", () => {
+    expect(loadPersisted(join(tmpdir(), "anvil-does-not-exist-xyz.json"))).toEqual([]);
+  });
+
+  it("loadPersisted returns [] for a garbage file", () => {
+    const path = tmpFile();
+    saveToDisk(path, [], SAVED_AT); // ensures dir exists
+    writeFileSync(path, "{ not valid json");
+    expect(loadPersisted(path)).toEqual([]);
+  });
+
+  it("saveToDisk then loadPersisted preserves an empty list", () => {
+    const path = tmpFile();
+    saveToDisk(path, [], SAVED_AT);
+    expect(loadPersisted(path)).toEqual([]);
   });
 });

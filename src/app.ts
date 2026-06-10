@@ -18,6 +18,7 @@ import { networkRoutes } from "./routes/network.js";
 import { recordingRoutes } from "./routes/recording.js";
 import { downloadRoutes } from "./routes/downloads.js";
 import { healthRoutes } from "./routes/health.js";
+import { toPersisted, saveToDisk, loadPersisted } from "./persistence.js";
 
 const logger = createLogger("app");
 
@@ -122,6 +123,10 @@ export function buildApp(config: Config): App {
         await pool.init();
         logger.info("Pool ready", { warmInstances: pool.available });
       }
+      if (config.persistPath) {
+        const restorable = loadPersisted(config.persistPath);
+        logger.info("Session persistence enabled", { path: config.persistPath, restorable: restorable.length });
+      }
       sessionManager.startCleanup(config.sessionTimeoutMs);
       if (rateLimiter) rateLimiter.startCleanup();
     },
@@ -129,6 +134,27 @@ export function buildApp(config: Config): App {
       server.close();
       sessionManager.stopCleanup();
       if (rateLimiter) rateLimiter.stopCleanup();
+      // Persist live sessions + cookies before tearing them down (opt-in).
+      if (config.persistPath) {
+        const persisted = [];
+        for (const info of sessionManager.list()) {
+          const session = sessionManager.get(info.id);
+          if (!session) continue;
+          let cookies: Awaited<ReturnType<typeof actions.getCookies>> = [];
+          try {
+            cookies = await actions.getCookies(session);
+          } catch {
+            // Best-effort: a dead browser shouldn't block shutdown persistence.
+          }
+          persisted.push(toPersisted(session, cookies));
+        }
+        try {
+          saveToDisk(config.persistPath, persisted, Date.now());
+          logger.info("Persisted sessions to disk", { path: config.persistPath, count: persisted.length });
+        } catch (err) {
+          logger.error("Failed to persist sessions", { error: err instanceof Error ? err.message : String(err) });
+        }
+      }
       await sessionManager.destroyAll();
       if (pool) await pool.shutdown();
     },

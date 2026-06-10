@@ -1,13 +1,17 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 467 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
+v1.0.0 | 30 endpoints | 472 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
 
 ## Last Completed
+- Session persistence (disk I/O, opt-in): `ANVIL_PERSIST_PATH` env (unset =
+  disabled). app.stop() gathers live-session cookies (best-effort) + writes
+  serialized metadata; app.start() logs restorable count. loadPersisted/saveToDisk
+  helpers (missing/garbage file → []). Re-creation on startup is a follow-up. 5
+  tests (472 total). No HTTP contract change.
 - Session persistence (serialization layer): `src/persistence.ts` — pure
-  toPersisted/serializeSessions/deserializeSessions over a versioned JSON envelope
-  (id, options, createdAt, cookies). deserialize is corruption-tolerant (returns
-  [] on bad/old/malformed input). No disk/browser wiring yet. 10 tests (467 total).
+  toPersisted/serializeSessions/deserializeSessions over a versioned JSON envelope.
+  Corruption-tolerant deserialize. 10 tests.
 - MCP server docs: `docs/MCP.md` — run instructions, `.mcp.json` config for Claude
   Code, all 10 tools with args/returns, MCP-relevant env vars. Completes MCP layer.
 - MCP tools get_cookies + set_cookies: added to `createTools` (10 tools total,
@@ -47,7 +51,8 @@ Each item is done when ALL success criteria pass. One item per iteration.
 1. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
    - Success: opt-in flag/env; on graceful shutdown serialize session list + cookies to disk; on startup offer to restore; round-trip test (serialize → deserialize → cookies match). No always-on disk writes.
    - DONE: pure serialization layer (`src/persistence.ts`) + 10 round-trip/tolerance tests.
-   - NEXT (actionable sub-task): add disk I/O + an opt-in env flag. New `ANVIL_PERSIST_PATH` (unset = disabled, no writes). On graceful shutdown (app.ts stop()), for each live session fetch cookies via SessionActions.getCookies, build toPersisted records, serializeSessions, write to the path. Add a `loadPersisted(path)` helper (reads file, returns deserializeSessions or [] if missing). Wire a startup log of how many would restore. Unit-test the file read/write helper with a temp path. Actual session re-creation on startup is a follow-up. No HTTP contract change.
+   - DONE: disk I/O + opt-in `ANVIL_PERSIST_PATH`; save on shutdown, load+log on startup; loadPersisted/saveToDisk helpers + 5 tests.
+   - NEXT (final sub-task): re-create persisted sessions on startup. In app.start(), when persistPath is set, loadPersisted → for each record, sessionManager.create(record.options) then actions.setCookies(session, record.cookies). Log restored count. Wrap each restore in try/catch so one failure doesn't abort the rest. Add a test (can use a fake/launch-stubbed SessionManager, or gate a real-Chrome restore in the E2E suite). Then mark this backlog item fully DONE.
 
 3. **Multi-tab / page support** — Address multiple pages within one session.
    - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.

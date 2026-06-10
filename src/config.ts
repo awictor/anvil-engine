@@ -9,6 +9,7 @@ export interface Config {
   webhookUrl: string;
   evaluateTimeoutMs: number;
   harMaxEntries: number;
+  persistPath: string;
 }
 
 export class ConfigError extends Error {
@@ -79,5 +80,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     webhookUrl,
     evaluateTimeoutMs,
     harMaxEntries,
+    persistPath: env.ANVIL_PERSIST_PATH || "",
   };
 }

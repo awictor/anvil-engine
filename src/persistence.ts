@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { type Session } from "./session.js";
 import { type LaunchOptions } from "./launcher.js";
 import type { Cookie, CookieParam } from "puppeteer-core";
@@ -79,4 +81,25 @@ export function deserializeSessions(json: string): PersistedSession[] {
     });
   }
   return out;
+}
+
+/**
+ * Reads persisted sessions from disk. Missing or unreadable file → []. Combined
+ * with deserializeSessions' tolerance, a corrupt or absent persistence file
+ * always degrades to "start fresh" rather than throwing.
+ */
+export function loadPersisted(path: string): PersistedSession[] {
+  let raw: string;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch {
+    return [];
+  }
+  return deserializeSessions(raw);
+}
+
+/** Writes persisted sessions to disk, creating parent dirs as needed. */
+export function saveToDisk(path: string, sessions: PersistedSession[], savedAt: number): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, serializeSessions(sessions, savedAt));
 }

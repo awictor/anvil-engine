@@ -5,6 +5,12 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Session persistence: disk I/O (opt-in)** — new `ANVIL_PERSIST_PATH` env var
+  (unset = disabled, no writes). On graceful shutdown the engine gathers each live
+  session's cookies (best-effort) and writes serialized session metadata to the
+  path; on startup it logs how many sessions are restorable. Added
+  `loadPersisted` / `saveToDisk` helpers (missing/garbage file → []). Session
+  re-creation on startup is a follow-up. 5 new tests (472 total). No HTTP contract change.
 - **Session persistence: serialization layer** — `src/persistence.ts` adds pure
   `toPersisted` / `serializeSessions` / `deserializeSessions` functions converting
   between live sessions and a versioned JSON envelope (id, options, createdAt,

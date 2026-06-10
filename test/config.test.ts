@@ -15,6 +15,12 @@ describe("loadConfig", () => {
     expect(config.poolSize).toBe(0);
     expect(config.evaluateTimeoutMs).toBe(30000);
     expect(config.harMaxEntries).toBe(5000);
+    expect(config.persistPath).toBe("");
+  });
+
+  it("reads ANVIL_PERSIST_PATH when set", () => {
+    const config = loadConfig({ ANVIL_PERSIST_PATH: "/var/anvil/sessions.json" } as NodeJS.ProcessEnv);
+    expect(config.persistPath).toBe("/var/anvil/sessions.json");
   });
 
   it("parses valid numeric overrides", () => {
