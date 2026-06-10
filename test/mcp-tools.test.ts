@@ -65,6 +65,18 @@ function makeDeps(overrides: Partial<{ active: unknown; sessions: Map<string, un
       calls.push(`setCookies:${cookies.length}`);
       return cookies.length;
     },
+    async listPages(_session: unknown) {
+      calls.push("listPages");
+      return [{ index: 0, url: "about:blank", title: "" }];
+    },
+    async openPage(_session: unknown, url?: string) {
+      calls.push(`openPage:${url ?? ""}`);
+      return { index: 1, url: url ?? "about:blank" };
+    },
+    async closePage(_session: unknown, index: number) {
+      calls.push(`closePage:${index}`);
+      return { closed: index, remaining: 1 };
+    },
   } as unknown as McpDeps["actions"];
 
   return { deps: { sessionManager, actions }, calls };
@@ -75,7 +87,7 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "evaluate", "get_cookies", "set_cookies", "release"]);
+    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "evaluate", "get_cookies", "set_cookies", "list_pages", "open_page", "close_page", "release"]);
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
       expect(tool.inputSchema.type).toBe("object");
@@ -302,6 +314,52 @@ describe("dispatchTool", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const res = await dispatchTool(tools, "get_cookies", {});
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("No active session");
+  });
+
+  it("list_pages delegates to SessionActions.listPages", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "list_pages", {});
+    expect(calls).toContain("listPages");
+    const block = res.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ pages: [{ index: 0, url: "about:blank", title: "" }] });
+  });
+
+  it("open_page delegates with optional url and blocks dangerous protocols", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const ok = await dispatchTool(tools, "open_page", { url: "https://example.com" });
+    expect(calls).toContain("openPage:https://example.com");
+    const block = ok.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ index: 1, url: "https://example.com" });
+
+    const blocked = await dispatchTool(tools, "open_page", { url: "file:///etc/passwd" });
+    expect(blocked.isError).toBe(true);
+    expect(blocked.content[0].text).toContain("Blocked protocol");
+  });
+
+  it("close_page requires a non-negative integer index", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const ok = await dispatchTool(tools, "close_page", { index: 1 });
+    expect(calls).toContain("closePage:1");
+    const block = ok.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ closed: 1, remaining: 1 });
+
+    const bad = await dispatchTool(tools, "close_page", { index: -1 });
+    expect(bad.isError).toBe(true);
+    expect(bad.content[0].text).toContain("non-negative integer");
+  });
+
+  it("page tools with no active session return error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const res = await dispatchTool(tools, "list_pages", {});
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("No active session");
   });

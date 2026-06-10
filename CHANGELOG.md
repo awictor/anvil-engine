@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP page tools** — the MCP tool set grows from 10 to 13: `list_pages`,
+  `open_page` (optional url, blocks file/js/data), `close_page` (non-negative
+  integer index). Restores MCP parity with the HTTP multi-tab surface; all
+  delegate to existing SessionActions page methods. 4 new dispatch tests
+  (489 total). No HTTP contract change.
 - **Live session view: `GET /v1/view` endpoint** — serves a single JPEG frame of
   the session's viewport (`Content-Type: image/jpeg`, optional `?quality=`,
   validated before session resolution). **Contract change: 37 endpoints** — added

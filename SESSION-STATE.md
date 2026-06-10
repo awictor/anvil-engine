@@ -1,13 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 37 endpoints | 485 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- MCP page tools: added list_pages/open_page/close_page to createTools (13 tools).
+  open_page blocks file/js/data; close_page requires non-negative int index.
+  Delegate to SessionActions. 4 dispatch tests (489 total). No HTTP contract change.
 - Live session view COMPLETE (single-frame): GET /v1/view serves a JPEG
-  (Content-Type image/jpeg, optional ?quality=, validated pre-session). Contract
-  36→37: docs count + content category, both assertions, AnvilClient.view(). 2
-  integration + 1 E2E. MJPEG streaming deferred. 15 E2E total.
+  (Content-Type image/jpeg, optional ?quality=). Contract 36→37 with full
+  consistency updates. 15 E2E total.
 - Live session view (frame capture): SessionActions.captureFrame(quality?) returns
   a single JPEG (clamped 1–100, default 60). Gated-E2E magic-bytes check.
 - Browser contexts COMPLETE: cookie-isolation proven. Context-scoped
@@ -73,7 +75,7 @@ v1.0.0 | 37 endpoints | 485 tests (+15 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **MCP page tools** — keep MCP at parity with the HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (10 → 13 tools).
+1. **Update docs/MCP.md to 13 tools** — the MCP doc still says "10 tools" and lists only the original set. Add list_pages/open_page/close_page to the tool table and fix the count. Docs-only, single iteration. (Quick + keeps docs honest now that MCP grew.)
 
 2. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
 

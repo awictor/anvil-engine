@@ -269,6 +269,66 @@ export function createTools(deps: McpDeps): McpTool[] {
       },
     },
     {
+      name: "list_pages",
+      description: "List the open pages/tabs in the session. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+      },
+      handler: async (args) => {
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const pages = await deps.actions.listPages(r.session);
+        return text({ pages });
+      },
+    },
+    {
+      name: "open_page",
+      description: "Open a new page/tab in the session, optionally navigating to a URL.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "Optional http(s) URL to load in the new page" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+      },
+      handler: async (args) => {
+        const url = args.url;
+        if (url !== undefined && typeof url !== "string") return error("url must be a string");
+        if (typeof url === "string" && /^(file|javascript|data):/i.test(url)) {
+          return error("Blocked protocol: only http/https allowed");
+        }
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const result = await deps.actions.openPage(r.session, url as string | undefined);
+        return text(result);
+      },
+    },
+    {
+      name: "close_page",
+      description: "Close the page/tab at the given index in the session.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          index: { type: "number", description: "Index of the page to close (from list_pages)" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+        required: ["index"],
+      },
+      handler: async (args) => {
+        const index = args.index;
+        if (typeof index !== "number" || !Number.isInteger(index) || index < 0) {
+          return error("index must be a non-negative integer");
+        }
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const result = await deps.actions.closePage(r.session, index);
+        return text(result);
+      },
+    },
+    {
       name: "release",
       description: "Destroy a browser session and free its resources.",
       inputSchema: {
