@@ -63,6 +63,8 @@ describe("buildMcpServer", () => {
       "navigate",
       "scrape",
       "screenshot",
+      "click",
+      "type",
       "release",
     ]);
     for (const t of result.tools) {

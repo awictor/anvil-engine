@@ -159,6 +159,60 @@ export function createTools(deps: McpDeps): McpTool[] {
       },
     },
     {
+      name: "click",
+      description: "Click an element by CSS selector. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: { type: "string", description: "CSS selector of the element to click" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+          button: { type: "string", description: "'left' (default), 'right', or 'middle'" },
+          clickCount: { type: "number", description: "Number of clicks (default 1)" },
+        },
+        required: ["selector"],
+      },
+      handler: async (args) => {
+        const selector = args.selector;
+        if (typeof selector !== "string" || !selector) return error("selector must be a non-empty string");
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        await deps.actions.click(r.session, {
+          selector,
+          button: args.button as string | undefined,
+          clickCount: args.clickCount as number | undefined,
+        });
+        return text({ success: true, selector });
+      },
+    },
+    {
+      name: "type",
+      description: "Type text into an element by CSS selector. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          selector: { type: "string", description: "CSS selector of the input element" },
+          text: { type: "string", description: "Text to type" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+          delay: { type: "number", description: "Per-keystroke delay ms (max 500)" },
+        },
+        required: ["selector", "text"],
+      },
+      handler: async (args) => {
+        const selector = args.selector;
+        if (typeof selector !== "string" || !selector) return error("selector must be a non-empty string");
+        const value = args.text;
+        if (typeof value !== "string" || !value) return error("text must be a non-empty string");
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        await deps.actions.type(r.session, {
+          selector,
+          text: value,
+          delay: args.delay as number | undefined,
+        });
+        return text({ success: true, selector });
+      },
+    },
+    {
       name: "release",
       description: "Destroy a browser session and free its resources.",
       inputSchema: {

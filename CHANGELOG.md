@@ -5,6 +5,10 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP tools: click + type** — the MCP tool set grows from 5 to 7. Both validate
+  selector (and text for type) as non-empty strings, matching the HTTP routes,
+  and delegate to existing SessionActions methods. 5 new dispatch tests (449
+  total). No HTTP contract change.
 - **MCP tools: scrape + screenshot** — the MCP tool set grows from 3 to 5.
   `scrape` returns extracted text/html (with the same file/javascript/data
   protocol blocking as the HTTP route); `screenshot` returns a base64

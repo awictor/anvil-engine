@@ -1,13 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 444 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 5 tools)
+v1.0.0 | 30 endpoints | 449 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 7 tools)
 
 ## Last Completed
-- MCP tools scrape + screenshot: added to `createTools` (5 tools total). scrape
-  returns text/html (file/js/data protocols blocked); screenshot returns a
-  base64 image/png content block (McpContent widened to text|image). Delegate to
-  existing SessionActions. 4 dispatch tests (444 total). No HTTP contract change.
+- MCP tools click + type: added to `createTools` (7 tools total). Both validate
+  selector (and text for type) as non-empty strings, matching the HTTP routes;
+  delegate to SessionActions. 5 dispatch tests (449 total). No HTTP contract change.
+- MCP tools scrape + screenshot: added to `createTools`. scrape returns text/html
+  (file/js/data protocols blocked); screenshot returns a base64 image/png block
+  (McpContent widened to text|image). 4 dispatch tests.
 - MCP stdio transport: `src/mcp/server.ts` wires the tool registry into a
   low-level MCP Server (tools/list + tools/call) over StdioServerTransport; added
   `mcp` npm script; `buildMcpServer`/`buildAnvilTools` exported for testability.
@@ -35,8 +37,9 @@ Each item is done when ALL success criteria pass. One item per iteration.
    - DONE: tool registry + dispatcher (`src/mcp/tools.ts`), create_session/navigate/release.
    - DONE: stdio transport (`src/mcp/server.ts`), `mcp` npm script, wiring tests. `npm run mcp` works.
    - DONE: scrape + screenshot tools (5 total).
-   - NEXT (actionable sub-task): add `click` + `type` tools to `createTools`, delegating to SessionActions.click/type, with dispatch tests in `test/mcp-tools.test.ts`. Update both tools/list name-list assertions (mcp-tools.test.ts AND mcp-server.test.ts) to include the new names. No HTTP contract change.
-   - THEN: `evaluate`, then `get_cookies` + `set_cookies` (same pattern).
+   - DONE: click + type tools (7 total).
+   - NEXT (actionable sub-task): add `evaluate` tool to `createTools`, delegating to SessionActions.evaluate (validate script non-empty string, 100KB cap like the HTTP route), with dispatch tests. Update both tools/list name-list assertions (mcp-tools.test.ts AND mcp-server.test.ts).
+   - THEN: `get_cookies` + `set_cookies` (same pattern; getCookies returns array, setCookies takes cookies array).
    - THEN: document the MCP server in README + add an `mcp.json` example config for Claude Code.
 
 2. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.

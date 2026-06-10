@@ -47,6 +47,12 @@ function makeDeps(overrides: Partial<{ active: unknown; sessions: Map<string, un
       // PNG magic bytes so the base64 is verifiable
       return new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     },
+    async click(_session: unknown, params: { selector: string }) {
+      calls.push(`click:${params.selector}`);
+    },
+    async type(_session: unknown, params: { selector: string; text: string }) {
+      calls.push(`type:${params.selector}:${params.text}`);
+    },
   } as unknown as McpDeps["actions"];
 
   return { deps: { sessionManager, actions }, calls };
@@ -57,7 +63,7 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "release"]);
+    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "release"]);
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
       expect(tool.inputSchema.type).toBe("object");
@@ -166,6 +172,53 @@ describe("dispatchTool", () => {
     const tools = createTools(deps);
     const res = await dispatchTool(tools, "screenshot", {});
     expect(res.isError).toBe(true);
+  });
+
+  it("click delegates to SessionActions.click and returns success", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "click", { selector: "#btn" });
+    expect(calls).toContain("click:#btn");
+    const block = res.content[0];
+    expect(block.type).toBe("text");
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ success: true, selector: "#btn" });
+  });
+
+  it("click without selector returns a validation error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "click", {});
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("selector must be");
+  });
+
+  it("type delegates to SessionActions.type with text", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "type", { selector: "#in", text: "hello" });
+    expect(calls).toContain("type:#in:hello");
+    const block = res.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ success: true, selector: "#in" });
+  });
+
+  it("type without text returns a validation error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "type", { selector: "#in" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("text must be");
+  });
+
+  it("click with no active session returns error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const res = await dispatchTool(tools, "click", { selector: "#btn" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("No active session");
   });
 
   it("release destroys the active session", async () => {
