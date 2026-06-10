@@ -5,6 +5,15 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP stdio transport** — `src/mcp/server.ts` wires the tool registry into a
+  low-level MCP `Server` with `tools/list` + `tools/call` handlers over
+  `StdioServerTransport`, plus an `mcp` npm script (`tsx src/mcp/server.ts`).
+  `buildMcpServer` / `buildAnvilTools` are exported so wiring is testable without
+  binding stdio or launching Chrome. Verified: `npm run mcp` completes an MCP
+  handshake and lists create_session/navigate/release. Adds `@modelcontextprotocol/sdk`
+  dependency. 5 new wiring tests (440 total).
+  *Why:* Claude Code / MeshClaw can now connect to Anvil as an MCP server.
+  *Impact:* no HTTP contract change (still 30 endpoints); remaining tools next.
 - **MCP tool layer (scaffold)** — `src/mcp/tools.ts` introduces a transport-agnostic
   MCP tool registry and dispatcher with the core tool set `create_session`,
   `navigate`, `release`. Each tool carries a JSON input schema and resolves the

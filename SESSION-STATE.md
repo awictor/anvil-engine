@@ -1,13 +1,17 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 435 tests (+6 gated E2E with real Chrome)
+v1.0.0 | 30 endpoints | 440 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 3 tools)
 
 ## Last Completed
+- MCP stdio transport: `src/mcp/server.ts` wires the tool registry into a
+  low-level MCP Server (tools/list + tools/call) over StdioServerTransport; added
+  `mcp` npm script; `buildMcpServer`/`buildAnvilTools` exported for testability.
+  Verified `npm run mcp` lists create_session/navigate/release via real MCP
+  handshake. Added @modelcontextprotocol/sdk. 5 wiring tests (440 total).
 - MCP tool layer scaffold: `src/mcp/tools.ts` — transport-agnostic registry +
   dispatcher with core tools create_session/navigate/release, each delegating to
-  SessionManager/SessionActions (no duplicated browser logic). 11 unit tests
-  (435 total). No HTTP contract change. Next: stdio transport + remaining tools.
+  SessionManager/SessionActions (no duplicated browser logic). 11 unit tests.
 - Code-review remediation + full refactor: extracted SessionActions service layer,
   router + middleware chain, and 7 route modules out of the 846-line monolithic
   api.ts; fixed 3 critical + 4 high bugs (session-cleanup race via in-flight
@@ -25,9 +29,10 @@ v1.0.0 | 30 endpoints | 435 tests (+6 gated E2E with real Chrome)
 Each item is done when ALL success criteria pass. One item per iteration.
 
 1. **MCP server layer** — Expose SessionActions as MCP tools so Claude Code / MeshClaw can drive browser sessions directly.
-   - DONE: tool registry + dispatcher (`src/mcp/tools.ts`) with create_session/navigate/release + 11 tests.
-   - NEXT (this is the actionable sub-task): add the stdio transport — install `@modelcontextprotocol/sdk`, create `src/mcp/server.ts` that wires `createTools` into an McpServer over stdio, add an `mcp` npm script (`tsx src/mcp/server.ts`). Success: `npm run mcp` starts and lists tools; schema/wiring test; tsc + vitest green.
-   - THEN: add remaining tools to `createTools` two at a time — scrape, click, type, screenshot, evaluate, get_cookies, set_cookies — each with dispatch tests. Reuse existing SessionActions methods (signatures already match).
+   - DONE: tool registry + dispatcher (`src/mcp/tools.ts`), create_session/navigate/release.
+   - DONE: stdio transport (`src/mcp/server.ts`), `mcp` npm script, wiring tests. `npm run mcp` works.
+   - NEXT (actionable sub-task): add remaining tools to `createTools` two at a time — start with `scrape` + `screenshot`, then `click` + `type`, then `evaluate`, then `get_cookies` + `set_cookies`. Each: JSON schema + handler delegating to the existing SessionActions method (signatures already match), plus dispatch tests in `test/mcp-tools.test.ts`. No HTTP contract change.
+   - THEN: document the MCP server in README + add an `mcp.json` example config for Claude Code.
 
 2. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
    - Success: opt-in flag/env; on graceful shutdown serialize session list + cookies to disk; on startup offer to restore; round-trip test (serialize → deserialize → cookies match). No always-on disk writes.
