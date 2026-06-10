@@ -176,6 +176,13 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
     await app.sessionManager.destroy(session.id);
   }, 60000);
 
+  it("captureFrame returns a JPEG (magic bytes FF D8 FF)", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+    const frame = await app.actions.captureFrame(session, 50);
+    expect(Array.from(frame.slice(0, 3))).toEqual([0xff, 0xd8, 0xff]);
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
+
   it("drives the /v1/pages routes over HTTP", async () => {
     const created = await (await fetch(`${base}/v1/sessions`, {
       method: "POST",

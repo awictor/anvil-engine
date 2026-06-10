@@ -1,13 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 36 endpoints | 483 tests (+13 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 36 endpoints | 483 tests (+14 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
-- Browser contexts COMPLETE: cookie-isolation proven. Added context-scoped
-  navigateInContext/evaluateInContext + a gated E2E that sets a cookie in context A
-  and confirms context B (same origin) can't see it. Feature done end to end
-  (service → routes → isolation). 13 E2E total.
+- Live session view (frame capture): SessionActions.captureFrame(quality?) returns
+  a single JPEG (quality clamped 1–100, default 60). Gated-E2E checks JPEG magic
+  bytes. Service-layer first; streaming endpoint next. 14 E2E total.
+- Browser contexts COMPLETE: cookie-isolation proven. Context-scoped
+  navigateInContext/evaluateInContext + gated E2E (cookie in A invisible to B).
+  Done end to end (service → routes → isolation).
 - Browser contexts (HTTP routes): /v1/contexts GET/POST + DELETE /v1/contexts/:id.
   Contract 33→36: docs count + contexts category, both docs-count assertions, 3 SDK
   methods. 3 integration tests + 1 HTTP-driven E2E.
@@ -70,7 +72,8 @@ Each item is done when ALL success criteria pass. One item per iteration.
 
 1. **Live session view** — Read-only view into a running session.
    - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.
-   - First actionable sub-task: add SessionActions captureFrame(session) returning a single JPEG (page.screenshot type:"jpeg", quality param) with a gated-E2E check of the JPEG magic bytes (FF D8 FF), BEFORE the streaming endpoint — service-layer first.
+   - DONE: SessionActions captureFrame(quality?) + gated-E2E JPEG magic-bytes check.
+   - NEXT (contract-changing): add `GET /v1/view` returning a single JPEG frame (Content-Type image/jpeg, optional ?quality=). Wire routes/view.ts in app.ts; bump /v1/docs 36→37 + new category, both docs-count assertions, add `view`/`captureFrame` to client.ts. Integration test (no-session 400, content-type) + E2E. Keep it a single-frame endpoint first; multi-frame MJPEG streaming can be a follow-up if needed (note: streaming holds a connection open — consider timeout/refcount implications before doing it).
 
 2. **MCP page tools** — keep MCP at parity with the new HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (13 tools).
 

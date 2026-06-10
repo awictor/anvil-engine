@@ -183,6 +183,12 @@ export class SessionActions {
     return this.run(session, (page) => page.screenshot({ fullPage, encoding: "binary" }));
   }
 
+  /** Captures a single JPEG frame of the current viewport — building block for the live session view. */
+  async captureFrame(session: Session, quality = 60): Promise<Uint8Array> {
+    const q = Math.max(1, Math.min(100, Math.round(quality)));
+    return this.run(session, (page) => page.screenshot({ type: "jpeg", quality: q, encoding: "binary" }));
+  }
+
   async getCookies(session: Session): Promise<Cookie[]> {
     return this.run(session, (page) => page.cookies());
   }

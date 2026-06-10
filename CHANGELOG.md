@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Live session view: frame capture** — `SessionActions.captureFrame(quality?)`
+  returns a single JPEG of the current viewport (quality clamped 1–100, default
+  60), the building block for a streaming live view. Service-layer first; the
+  streaming endpoint follows. 1 new gated-E2E (JPEG magic bytes, 14 E2E total).
+  No HTTP contract change.
 - **Browser contexts: isolation proven (feature complete)** — added context-scoped
   `navigateInContext` / `evaluateInContext` service methods and a gated E2E that
   sets a cookie in one context and confirms a second context on the same origin
