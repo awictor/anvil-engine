@@ -234,6 +234,41 @@ export function createTools(deps: McpDeps): McpTool[] {
       },
     },
     {
+      name: "get_cookies",
+      description: "Get all cookies from the session. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+      },
+      handler: async (args) => {
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const cookies = await deps.actions.getCookies(r.session);
+        return text({ cookies });
+      },
+    },
+    {
+      name: "set_cookies",
+      description: "Inject cookies into the session. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          cookies: { type: "array", description: "Array of cookie objects to set" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+        required: ["cookies"],
+      },
+      handler: async (args) => {
+        if (!Array.isArray(args.cookies)) return error("cookies must be an array");
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const injected = await deps.actions.setCookies(r.session, args.cookies as Parameters<typeof deps.actions.setCookies>[1]);
+        return text({ injected });
+      },
+    },
+    {
       name: "release",
       description: "Destroy a browser session and free its resources.",
       inputSchema: {

@@ -57,6 +57,14 @@ function makeDeps(overrides: Partial<{ active: unknown; sessions: Map<string, un
       calls.push(`evaluate:${script}`);
       return { evaluated: script.length };
     },
+    async getCookies(_session: unknown) {
+      calls.push("getCookies");
+      return [{ name: "sid", value: "abc" }];
+    },
+    async setCookies(_session: unknown, cookies: unknown[]) {
+      calls.push(`setCookies:${cookies.length}`);
+      return cookies.length;
+    },
   } as unknown as McpDeps["actions"];
 
   return { deps: { sessionManager, actions }, calls };
@@ -67,7 +75,7 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "evaluate", "release"]);
+    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "evaluate", "get_cookies", "set_cookies", "release"]);
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
       expect(tool.inputSchema.type).toBe("object");
@@ -257,6 +265,43 @@ describe("dispatchTool", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const res = await dispatchTool(tools, "evaluate", { script: "1+1" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("No active session");
+  });
+
+  it("get_cookies delegates to SessionActions.getCookies", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "get_cookies", {});
+    expect(calls).toContain("getCookies");
+    const block = res.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ cookies: [{ name: "sid", value: "abc" }] });
+  });
+
+  it("set_cookies delegates to SessionActions.setCookies and returns count", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "set_cookies", { cookies: [{ name: "a", value: "1" }, { name: "b", value: "2" }] });
+    expect(calls).toContain("setCookies:2");
+    const block = res.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ injected: 2 });
+  });
+
+  it("set_cookies without an array returns a validation error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "set_cookies", { cookies: "not-an-array" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("must be an array");
+  });
+
+  it("get_cookies with no active session returns error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const res = await dispatchTool(tools, "get_cookies", {});
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("No active session");
   });

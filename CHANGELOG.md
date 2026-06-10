@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP tools: get_cookies + set_cookies** — the MCP tool set grows from 8 to 10,
+  completing core parity with the HTTP actions. get_cookies returns `{ cookies }`;
+  set_cookies validates the array (matching the HTTP route) and returns
+  `{ injected }`. Both delegate to existing SessionActions. 4 new dispatch tests
+  (457 total). No HTTP contract change.
 - **MCP tool: evaluate** — the MCP tool set grows from 7 to 8. Validates script
   as a non-empty string with the same 100KB cap as the HTTP route, and delegates
   to SessionActions.evaluate (which enforces the CDP-terminate timeout). 4 new

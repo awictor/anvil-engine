@@ -66,6 +66,8 @@ describe("buildMcpServer", () => {
       "click",
       "type",
       "evaluate",
+      "get_cookies",
+      "set_cookies",
       "release",
     ]);
     for (const t of result.tools) {
