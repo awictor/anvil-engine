@@ -3,6 +3,9 @@ import { rmSync } from "node:fs";
 import { launchBrowser, killBrowser, type BrowserProcess, type LaunchOptions } from "./launcher.js";
 import { type BrowserPool } from "./pool.js";
 import { fireWebhook } from "./webhooks.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("session");
 
 export interface Session {
   id: string;
@@ -103,7 +106,7 @@ export class SessionManager {
       for (const [id, session] of this.sessions) {
         const idleMs = now - session.lastActivityAt;
         if (idleMs > timeoutMs) {
-          process.stderr.write(`[anvil-engine] Session ${id} timed out after ${idleMs}ms idle\n`);
+          logger.info("Session timed out", { sessionId: id, idleMs });
           this.destroy(id);
           fireWebhook("session.timed_out", id);
         }

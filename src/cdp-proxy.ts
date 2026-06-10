@@ -2,6 +2,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { type IncomingMessage } from "node:http";
 import { type Server } from "node:http";
 import { type SessionManager } from "./session.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("cdp-proxy");
 
 export function createCdpProxy(server: Server, sessionManager: SessionManager): WebSocketServer {
   const wss = new WebSocketServer({ server, path: "/cdp" });
@@ -9,10 +12,10 @@ export function createCdpProxy(server: Server, sessionManager: SessionManager): 
   const requireAuth = process.env.ANVIL_REQUIRE_CDP_AUTH === "true";
 
   if (!apiKey) {
-    process.stderr.write(
+    logger.warn(
       requireAuth
-        ? "[anvil-engine] WARNING: ANVIL_REQUIRE_CDP_AUTH=true but no ANVIL_API_KEY set — all CDP connections will be rejected\n"
-        : "[anvil-engine] WARNING: CDP proxy running without authentication (no ANVIL_API_KEY set)\n",
+        ? "ANVIL_REQUIRE_CDP_AUTH=true but no ANVIL_API_KEY set — all CDP connections will be rejected"
+        : "CDP proxy running without authentication (no ANVIL_API_KEY set)",
     );
   }
 

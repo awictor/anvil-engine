@@ -8,25 +8,33 @@ import { withBrowser } from "./browser-helper.js";
 import { generateFingerprintScript } from "./fingerprint.js";
 import { fireWebhook } from "./webhooks.js";
 import { RateLimiter } from "./rate-limiter.js";
+import { loadConfig, ConfigError } from "./config.js";
+import { createLogger } from "./logger.js";
+import { counters as metrics, recordRequest, snapshot } from "./metrics.js";
 
-const PORT = Number(process.env.ANVIL_ENGINE_PORT) || 3000;
-const HOST = process.env.ANVIL_HOST || "0.0.0.0";
-const API_KEY = process.env.ANVIL_API_KEY || "";
-const SESSION_TIMEOUT = Number(process.env.ANVIL_SESSION_TIMEOUT_MS) || 300000;
-const RATE_LIMIT_RPM = Number(process.env.ANVIL_RATE_LIMIT_RPM) || 0;
-const MAX_SESSIONS = Number(process.env.ANVIL_MAX_SESSIONS) || 10;
-const POOL_SIZE = Number(process.env.ANVIL_POOL_SIZE) || 0;
+const logger = createLogger("api");
+
+let config;
+try {
+  config = loadConfig();
+} catch (err) {
+  if (err instanceof ConfigError) {
+    process.stderr.write(`[anvil-engine] ${err.message}\n`);
+    process.exit(1);
+  }
+  throw err;
+}
+
+const PORT = config.port;
+const HOST = config.host;
+const API_KEY = config.apiKey;
+const SESSION_TIMEOUT = config.sessionTimeoutMs;
+const RATE_LIMIT_RPM = config.rateLimitRpm;
+const MAX_SESSIONS = config.maxSessions;
+const POOL_SIZE = config.poolSize;
 const pool = POOL_SIZE > 0 ? new BrowserPool(POOL_SIZE) : undefined;
 const sessionManager = new SessionManager(pool);
 const rateLimiter = RATE_LIMIT_RPM > 0 ? new RateLimiter(RATE_LIMIT_RPM) : null;
-
-const metrics = {
-  sessionsCreated: 0,
-  sessionsReleased: 0,
-  peakConcurrent: 0,
-  requestsServed: 0,
-  errorsCount: 0,
-};
 
 interface HarEntry {
   url: string;
@@ -64,9 +72,9 @@ const server = createServer(async (req, res) => {
 
   res.on("finish", () => {
     if (method !== "OPTIONS") {
-      metrics.requestsServed++;
-      if (res.statusCode >= 400) metrics.errorsCount++;
-      process.stderr.write(`[anvil-engine] ${requestId} ${method} ${url.pathname} ${res.statusCode} ${Date.now() - startTime}ms\n`);
+      const durationMs = Date.now() - startTime;
+      recordRequest(method, url.pathname, res.statusCode, durationMs);
+      logger.info("request", { requestId, method, path: url.pathname, status: res.statusCode, durationMs });
     }
   });
 
@@ -688,7 +696,7 @@ const server = createServer(async (req, res) => {
 
     // GET /v1/metrics
     if (method === "GET" && url.pathname === "/v1/metrics") {
-      json(res, 200, { ...metrics, activeSessions: sessionManager.size, uptime: process.uptime() });
+      json(res, 200, { ...metrics, activeSessions: sessionManager.size, uptime: process.uptime(), endpoints: snapshot() });
       return;
     }
 
@@ -763,7 +771,7 @@ createCdpProxy(server, sessionManager);
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  process.stderr.write(`[anvil-engine] ${signal} — stopping server, destroying ${sessionManager.size} sessions...\n`);
+  logger.info(`${signal} — stopping server`, { sessions: sessionManager.size });
   server.close();
   sessionManager.stopCleanup();
   if (rateLimiter) rateLimiter.stopCleanup();
@@ -774,26 +782,26 @@ async function shutdown(signal: string) {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("uncaughtException", (err) => {
-  process.stderr.write(`[anvil-engine] Uncaught exception: ${err.message}\n`);
+  logger.error("Uncaught exception", { error: err.message });
 });
 process.on("unhandledRejection", (reason) => {
-  process.stderr.write(`[anvil-engine] Unhandled rejection: ${reason}\n`);
+  logger.error("Unhandled rejection", { reason: String(reason) });
 });
 
 // Start server (init pool first if configured)
 (async () => {
   if (pool) {
-    process.stderr.write(`[anvil-engine] Pre-warming ${POOL_SIZE} browser instances...\n`);
+    logger.info(`Pre-warming ${POOL_SIZE} browser instances`);
     await pool.init();
-    process.stderr.write(`[anvil-engine] Pool ready: ${pool.available} warm instances\n`);
+    logger.info("Pool ready", { warmInstances: pool.available });
   }
   sessionManager.startCleanup(SESSION_TIMEOUT);
   if (rateLimiter) rateLimiter.startCleanup();
   server.listen(PORT, HOST, () => {
-    process.stderr.write(`[anvil-engine] Running on http://${HOST}:${PORT}\n`);
-    process.stderr.write(`[anvil-engine] CDP proxy on ws://${HOST}:${PORT}/cdp\n`);
-    process.stderr.write(`[anvil-engine] Auth: ${API_KEY ? "API key enabled" : "disabled (dev mode)"}\n`);
-    process.stderr.write(`[anvil-engine] Session timeout: ${SESSION_TIMEOUT > 0 ? `${SESSION_TIMEOUT}ms` : "disabled"}\n`);
+    logger.info(`Running on http://${HOST}:${PORT}`);
+    logger.info(`CDP proxy on ws://${HOST}:${PORT}/cdp`);
+    logger.info(`Auth: ${API_KEY ? "API key enabled" : "disabled (dev mode)"}`);
+    logger.info(`Session timeout: ${SESSION_TIMEOUT > 0 ? `${SESSION_TIMEOUT}ms` : "disabled"}`);
   });
 })();
 
