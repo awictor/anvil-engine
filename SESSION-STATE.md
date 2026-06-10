@@ -4,8 +4,11 @@
 v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- Persistence round-trip E2E: gated real-Chrome test proves serialize→save
+  (shutdown)→load→restore (startup) across two app instances sharing a persist
+  file; a cookie set pre-shutdown survives into the restored session. 16 E2E total.
 - docs/MCP.md updated to 13 tools: added list_pages/open_page/close_page rows +
-  corrected count (was stale at 10). Docs-only; 489 tests unchanged.
+  corrected count. Docs-only.
 - MCP page tools: added list_pages/open_page/close_page to createTools (13 tools).
   open_page blocks file/js/data; close_page requires non-negative int index. 4 tests.
 - Live session view COMPLETE (single-frame): GET /v1/view serves a JPEG
@@ -71,14 +74,14 @@ v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server 
 ## Known Issues
 - CRLF git warnings on commit are cosmetic (LF→CRLF on Windows checkout); ignore.
 - E2E suite spawns real Chrome — run only via `vitest.e2e.config.ts`, not the default suite.
-- Host disk filled to 100% during an iteration (ENOSPC truncated CHANGELOG.md mid-write; recovered via `git checkout`). Cleared ~5G of leaked Temp dirs (HeadlessChrome*/anvil-*/scoped_dir*). E2E runs leak Chrome temp profiles when Chrome isn't cleanly killed — run `taskkill //F //IM chrome.exe` + clear `%TEMP%/HeadlessChrome*` periodically. Host was already near-full from unrelated data.
+- DISK PRESSURE (worsening): host Temp is at ~100%, only ~2G free after cleanup, and each E2E run nets it lower (Chrome profiles + the engine's per-session download dirs aren't all reclaimed even with taskkill + temp clear). One ENOSPC already truncated CHANGELOG.md mid-write (recovered via git checkout). MITIGATION until addressed: prefer non-E2E iterations; when E2E is required, run it, then `taskkill //F //IM chrome.exe` + `rm -rf %TEMP%/HeadlessChrome*/ %TEMP%/anvil-*`. ROOT CAUSE likely also unrelated host data (233G used). Consider: a cleanup step in the harness, or pausing the loop until the host is cleared.
 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
+1. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs AND bloat the repo on a disk that's near-full. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. Promoted above feature work because of the disk-pressure Known Issue. Docs-/config-only on the source side; no tsc/test risk, but it touches many tracked paths — its own isolated iteration.
 
-2. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
+2. **Persistence follow-up (b)** — consider preserving session ids across restore (currently fresh ids on restart). Only worth doing if a client depends on stable ids; otherwise close as won't-do. Low priority.
 
 3. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 

@@ -4,6 +4,12 @@ All notable changes to the Anvil Engine are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Session persistence: real-Chrome round-trip E2E** — a gated test proves the
+  full serialize → save (shutdown) → load → restore (startup) path across two
+  engine instances sharing a persist file, including that a cookie set before
+  shutdown is present in the restored session. 1 new E2E (16 E2E total).
+
 ### Changed
 - **docs/MCP.md updated to 13 tools** — added the `list_pages`/`open_page`/
   `close_page` rows and corrected the tool count (was stale at 10).
