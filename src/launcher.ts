@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { platform, tmpdir } from "node:os";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -258,4 +258,14 @@ export function killBrowser(proc: BrowserProcess): Promise<void> {
       finish();
     }
   });
+}
+
+/** Removes a session's per-session download directory if set. Safe to call repeatedly. */
+export function removeDownloadDir(dir: string | undefined): void {
+  if (!dir) return;
+  try {
+    rmSync(dir, { recursive: true, force: true });
+  } catch {
+    // Best-effort; a locked file (e.g. AV scan) shouldn't throw on cleanup.
+  }
 }

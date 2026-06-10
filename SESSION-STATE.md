@@ -1,12 +1,16 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 37 endpoints | 493 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
-- Repo hygiene: added .gitignore + untracked node_modules (7105 files) and dist
-  (54) via git rm --cached (files kept on disk). Working tree now clean; installs
-  no longer churn git. dist/api.js still on disk (docker.test.ts green). 489 tests.
+- Fixed download-dir leak on crash-relaunch: relaunch overwrote fresh.downloadDir
+  with the old dir, orphaning the new one + mistracking downloads. Now keeps fresh,
+  removes old. Shared removeDownloadDir helper (destroy + relaunch) + 4 unit tests.
+  Reduces temp-dir accumulation behind the disk issue. (E2E skipped this iter —
+  disk at 2G; the crash path isn't covered by existing E2E anyway. 493 default.)
+- Repo hygiene: added .gitignore + untracked node_modules (7105) and dist (54)
+  via git rm --cached (files kept on disk). Working tree clean. docker.test.ts green.
 - Persistence round-trip E2E: gated real-Chrome test proves serialize→save→load→
   restore across two app instances; cookie survives into restored session. 16 E2E.
 - docs/MCP.md updated to 13 tools: added list_pages/open_page/close_page rows +
@@ -81,9 +85,9 @@ v1.0.0 | 37 endpoints | 489 tests (+15 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Investigate per-session temp/download dir reclamation** — the disk-pressure Known Issue suspects the engine leaves temp dirs behind. session.ts destroy() rmSync's the download dir, but verify: (a) does every session create exactly one tmp download dir and is it always removed on destroy/timeout? (b) are crash-relaunched browsers' old dirs orphaned? Add a unit/integration test asserting the download dir is gone after destroy. Service-/test-only; no contract change. (Real engine hardening + helps the disk issue.)
+1. **Live session view: MJPEG streaming** — upgrade /v1/view (or add /v1/view/stream) to a multipart/x-mixed-replace JPEG stream. CAUTION: holds a connection open — must respect session timeout + in-flight refcount, and bound frame rate. Design the lifecycle before coding. Contract-changing if a new endpoint. NOTE: E2E-heavy; check disk headroom first (Known Issue).
 
-2. **Live session view: MJPEG streaming** — upgrade /v1/view (or add /v1/view/stream) to a multipart/x-mixed-replace JPEG stream. CAUTION: holds a connection open — must respect session timeout + in-flight refcount, and bound frame rate. Design the lifecycle before coding. Contract-changing if a new endpoint.
+2. **Crash-relaunch E2E (deferred — needs disk headroom)** — gated E2E that kills a session's Chrome pid mid-life, makes a request to trigger relaunch, and asserts (a) the request succeeds and (b) no orphaned anvil-downloads-* dir remains. Validates the relaunch download-dir fix end to end. Only run when Temp has >5G free.
 
 3. **Persistence follow-up (b)** — consider preserving session ids across restore (currently fresh ids on restart). Only worth doing if a client depends on stable ids; otherwise close as won't-do. Low priority.
 

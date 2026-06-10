@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { rmSync } from "node:fs";
-import { launchBrowser, killBrowser, type BrowserProcess, type LaunchOptions } from "./launcher.js";
+import { launchBrowser, killBrowser, removeDownloadDir, type BrowserProcess, type LaunchOptions } from "./launcher.js";
 import { type BrowserPool } from "./pool.js";
 import { fireWebhook } from "./webhooks.js";
 import { createLogger } from "./logger.js";
@@ -100,9 +99,7 @@ export class SessionManager {
       await killBrowser(session.browserProcess);
     }
 
-    if (session.browserProcess.downloadDir) {
-      try { rmSync(session.browserProcess.downloadDir, { recursive: true, force: true }); } catch {}
-    }
+    removeDownloadDir(session.browserProcess.downloadDir);
 
     session.status = "released";
     this.sessions.delete(id);

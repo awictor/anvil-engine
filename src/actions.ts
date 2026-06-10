@@ -1,6 +1,6 @@
 import type { Browser, BrowserContext, Page, HTTPResponse, HTTPRequest, Cookie, CookieParam } from "puppeteer-core";
 import { randomUUID } from "node:crypto";
-import { launchBrowser, killBrowser } from "./launcher.js";
+import { launchBrowser, killBrowser, removeDownloadDir } from "./launcher.js";
 import { type Session, type SessionManager } from "./session.js";
 import { isCrashError } from "./browser-helper.js";
 import { createLogger } from "./logger.js";
@@ -85,8 +85,13 @@ export class SessionActions {
     const old = session.browserProcess;
     void killBrowser(old);
     const fresh = await launchBrowser(session.options);
-    fresh.downloadDir = old.downloadDir;
+    // Keep the fresh browser's own download dir (where Chrome now writes) and
+    // remove the old session's dir — overwriting the pointer to `old` would both
+    // orphan the fresh dir and mistrack downloads.
     session.browserProcess = fresh;
+    if (old.downloadDir && old.downloadDir !== fresh.downloadDir) {
+      removeDownloadDir(old.downloadDir);
+    }
     this.invalidate(session.id);
   }
 

@@ -4,6 +4,14 @@ All notable changes to the Anvil Engine are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **Download-dir leak on crash-relaunch** — `relaunch` previously overwrote the
+  fresh browser's `downloadDir` with the old one, orphaning the freshly-created
+  temp dir (never cleaned on destroy) AND mistracking where Chrome actually wrote
+  downloads. Now it keeps the fresh dir and removes the old one. Added a shared
+  `removeDownloadDir` helper (used by session destroy + relaunch) and 4 unit tests
+  for reclamation. Reduces the temp-dir accumulation behind the disk-pressure issue.
+
 ### Changed
 - **Repo hygiene: gitignore node_modules + dist** — added `.gitignore` and
   untracked 7105 `node_modules` files + 54 `dist` files from git via
