@@ -14,6 +14,10 @@ export interface Session {
   createdAt: number;
   lastActivityAt: number;
   options: LaunchOptions;
+  /** In-flight browser operations; destroy() waits for this to drain. */
+  inFlight: number;
+  /** Set when destroy() starts — blocks new work on this session. */
+  destroying: boolean;
 }
 
 export class SessionManager {
@@ -38,6 +42,8 @@ export class SessionManager {
       createdAt: now,
       lastActivityAt: now,
       options,
+      inFlight: 0,
+      destroying: false,
     };
 
     this.sessions.set(id, session);
@@ -55,9 +61,38 @@ export class SessionManager {
     return undefined;
   }
 
+  /**
+   * Marks a browser operation as in-flight. Returns false when the session
+   * is being destroyed (callers must not start new work). Always pair with
+   * endRequest() in a finally block.
+   */
+  beginRequest(id: string): boolean {
+    const session = this.sessions.get(id);
+    if (!session || session.destroying) return false;
+    session.inFlight++;
+    return true;
+  }
+
+  endRequest(id: string): void {
+    const session = this.sessions.get(id);
+    if (session && session.inFlight > 0) session.inFlight--;
+  }
+
   async destroy(id: string): Promise<Session | undefined> {
     const session = this.sessions.get(id);
-    if (!session) return undefined;
+    if (!session || session.destroying) return undefined;
+    session.destroying = true;
+
+    // Let in-flight operations drain before killing the browser (5s grace).
+    const deadline = Date.now() + 5000;
+    while (session.inFlight > 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (session.inFlight > 0) {
+      logger.warn("Destroying session with operations still in flight", { sessionId: id, inFlight: session.inFlight });
+    }
+
+    this.onDestroy?.(session);
 
     if (this.pool) {
       this.pool.release(session.browserProcess);
@@ -73,6 +108,9 @@ export class SessionManager {
     this.sessions.delete(id);
     return session;
   }
+
+  /** Hook invoked at the start of destroy — used to release per-session resources (cached connections, HAR stores). */
+  onDestroy: ((session: Session) => void) | null = null;
 
   async destroyAll(): Promise<number> {
     let count = 0;
@@ -94,7 +132,7 @@ export class SessionManager {
 
   touch(id: string): void {
     const session = this.sessions.get(id);
-    if (session) session.lastActivityAt = Date.now();
+    if (session && !session.destroying) session.lastActivityAt = Date.now();
   }
 
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
