@@ -59,7 +59,7 @@ export class SessionManager {
     if (this.pool) {
       this.pool.release(session.browserProcess);
     } else {
-      killBrowser(session.browserProcess);
+      await killBrowser(session.browserProcess);
     }
 
     if (session.browserProcess.downloadDir) {

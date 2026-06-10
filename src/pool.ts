@@ -31,13 +31,11 @@ export class BrowserPool {
   }
 
   release(proc: BrowserProcess): void {
-    killBrowser(proc);
+    void killBrowser(proc);
   }
 
   async shutdown(): Promise<void> {
-    for (const proc of this.warm) {
-      killBrowser(proc);
-    }
+    await Promise.all(this.warm.map((proc) => killBrowser(proc)));
     this.warm = [];
   }
 
