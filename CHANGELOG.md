@@ -5,6 +5,12 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Session persistence: serialization layer** — `src/persistence.ts` adds pure
+  `toPersisted` / `serializeSessions` / `deserializeSessions` functions converting
+  between live sessions and a versioned JSON envelope (id, options, createdAt,
+  cookies). `deserializeSessions` is tolerant — malformed JSON, version mismatch,
+  or bad shape yields `[]` so a corrupt file can never crash startup. No disk or
+  browser wiring yet (next iteration). 10 unit tests (467 total).
 - **MCP server docs** — `docs/MCP.md` documents how to run the stdio MCP server
   (`npm run mcp` / `node dist/mcp/server.js`), a copy-paste `.mcp.json` config for
   Claude Code, all 10 tools with args/returns, and the env vars that actually

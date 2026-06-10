@@ -1,12 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 457 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
+v1.0.0 | 30 endpoints | 467 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
 
 ## Last Completed
+- Session persistence (serialization layer): `src/persistence.ts` — pure
+  toPersisted/serializeSessions/deserializeSessions over a versioned JSON envelope
+  (id, options, createdAt, cookies). deserialize is corruption-tolerant (returns
+  [] on bad/old/malformed input). No disk/browser wiring yet. 10 tests (467 total).
 - MCP server docs: `docs/MCP.md` — run instructions, `.mcp.json` config for Claude
-  Code, all 10 tools with args/returns, MCP-relevant env vars (HTTP-only vars
-  clarified as no-ops for stdio). Completes the MCP server layer backlog item.
+  Code, all 10 tools with args/returns, MCP-relevant env vars. Completes MCP layer.
 - MCP tools get_cookies + set_cookies: added to `createTools` (10 tools total,
   core parity complete). get_cookies returns { cookies }; set_cookies validates
   the array and returns { injected }. 4 dispatch tests (457 total).
@@ -43,7 +46,8 @@ Each item is done when ALL success criteria pass. One item per iteration.
 
 1. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
    - Success: opt-in flag/env; on graceful shutdown serialize session list + cookies to disk; on startup offer to restore; round-trip test (serialize → deserialize → cookies match). No always-on disk writes.
-   - First actionable sub-task: add a `src/persistence.ts` with `serializeSessions(sessions)` → JSON and `deserializeSessions(json)` pure functions (session id, options, createdAt, cookies array), plus unit tests for the round-trip. Wiring into shutdown/startup comes in a follow-up iteration. No HTTP contract change yet.
+   - DONE: pure serialization layer (`src/persistence.ts`) + 10 round-trip/tolerance tests.
+   - NEXT (actionable sub-task): add disk I/O + an opt-in env flag. New `ANVIL_PERSIST_PATH` (unset = disabled, no writes). On graceful shutdown (app.ts stop()), for each live session fetch cookies via SessionActions.getCookies, build toPersisted records, serializeSessions, write to the path. Add a `loadPersisted(path)` helper (reads file, returns deserializeSessions or [] if missing). Wire a startup log of how many would restore. Unit-test the file read/write helper with a temp path. Actual session re-creation on startup is a follow-up. No HTTP contract change.
 
 3. **Multi-tab / page support** — Address multiple pages within one session.
    - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.
