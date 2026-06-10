@@ -213,6 +213,27 @@ export function createTools(deps: McpDeps): McpTool[] {
       },
     },
     {
+      name: "evaluate",
+      description: "Execute JavaScript in the session's page and return the result. Targets the active session unless sessionId is given.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          script: { type: "string", description: "JavaScript to evaluate in the page context" },
+          sessionId: { type: "string", description: "Target session id (optional; defaults to active)" },
+        },
+        required: ["script"],
+      },
+      handler: async (args) => {
+        const script = args.script;
+        if (typeof script !== "string" || !script) return error("script must be a non-empty string");
+        if (script.length > 100_000) return error("script exceeds 100KB limit");
+        const r = resolve(deps, args);
+        if (!r.session) return error(r.err);
+        const result = await deps.actions.evaluate(r.session, script);
+        return text(result);
+      },
+    },
+    {
       name: "release",
       description: "Destroy a browser session and free its resources.",
       inputSchema: {

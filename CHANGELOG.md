@@ -5,6 +5,10 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP tool: evaluate** — the MCP tool set grows from 7 to 8. Validates script
+  as a non-empty string with the same 100KB cap as the HTTP route, and delegates
+  to SessionActions.evaluate (which enforces the CDP-terminate timeout). 4 new
+  dispatch tests (453 total). No HTTP contract change.
 - **MCP tools: click + type** — the MCP tool set grows from 5 to 7. Both validate
   selector (and text for type) as non-empty strings, matching the HTTP routes,
   and delegate to existing SessionActions methods. 5 new dispatch tests (449

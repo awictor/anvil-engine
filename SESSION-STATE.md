@@ -1,12 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 449 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 7 tools)
+v1.0.0 | 30 endpoints | 453 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 8 tools)
 
 ## Last Completed
-- MCP tools click + type: added to `createTools` (7 tools total). Both validate
-  selector (and text for type) as non-empty strings, matching the HTTP routes;
-  delegate to SessionActions. 5 dispatch tests (449 total). No HTTP contract change.
+- MCP tool evaluate: added to `createTools` (8 tools total). Validates script
+  non-empty + 100KB cap (matching the HTTP route); delegates to
+  SessionActions.evaluate. 4 dispatch tests (453 total). No HTTP contract change.
+- MCP tools click + type: added to `createTools`. Both validate selector (and
+  text for type) as non-empty strings, matching the HTTP routes; delegate to
+  SessionActions. 5 dispatch tests.
 - MCP tools scrape + screenshot: added to `createTools`. scrape returns text/html
   (file/js/data protocols blocked); screenshot returns a base64 image/png block
   (McpContent widened to text|image). 4 dispatch tests.
@@ -38,8 +41,8 @@ Each item is done when ALL success criteria pass. One item per iteration.
    - DONE: stdio transport (`src/mcp/server.ts`), `mcp` npm script, wiring tests. `npm run mcp` works.
    - DONE: scrape + screenshot tools (5 total).
    - DONE: click + type tools (7 total).
-   - NEXT (actionable sub-task): add `evaluate` tool to `createTools`, delegating to SessionActions.evaluate (validate script non-empty string, 100KB cap like the HTTP route), with dispatch tests. Update both tools/list name-list assertions (mcp-tools.test.ts AND mcp-server.test.ts).
-   - THEN: `get_cookies` + `set_cookies` (same pattern; getCookies returns array, setCookies takes cookies array).
+   - DONE: evaluate tool (8 total).
+   - NEXT (actionable sub-task): add `get_cookies` + `set_cookies` tools to `createTools`. get_cookies delegates to SessionActions.getCookies (returns array as JSON); set_cookies takes a `cookies` array param, validates it's an array, delegates to SessionActions.setCookies, returns `{ injected: count }`. Dispatch tests + update both tools/list assertions. This completes core MCP parity (10 tools).
    - THEN: document the MCP server in README + add an `mcp.json` example config for Claude Code.
 
 2. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.

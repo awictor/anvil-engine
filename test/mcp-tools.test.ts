@@ -53,6 +53,10 @@ function makeDeps(overrides: Partial<{ active: unknown; sessions: Map<string, un
     async type(_session: unknown, params: { selector: string; text: string }) {
       calls.push(`type:${params.selector}:${params.text}`);
     },
+    async evaluate(_session: unknown, script: string) {
+      calls.push(`evaluate:${script}`);
+      return { evaluated: script.length };
+    },
   } as unknown as McpDeps["actions"];
 
   return { deps: { sessionManager, actions }, calls };
@@ -63,7 +67,7 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "release"]);
+    expect(names).toEqual(["create_session", "navigate", "scrape", "screenshot", "click", "type", "evaluate", "release"]);
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
       expect(tool.inputSchema.type).toBe("object");
@@ -217,6 +221,42 @@ describe("dispatchTool", () => {
     const { deps } = makeDeps();
     const tools = createTools(deps);
     const res = await dispatchTool(tools, "click", { selector: "#btn" });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("No active session");
+  });
+
+  it("evaluate delegates to SessionActions.evaluate and returns the result", async () => {
+    const { deps, calls } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "evaluate", { script: "1+1" });
+    expect(calls).toContain("evaluate:1+1");
+    const block = res.content[0];
+    if (block.type === "text") expect(JSON.parse(block.text)).toEqual({ evaluated: 3 });
+  });
+
+  it("evaluate without script returns a validation error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "evaluate", {});
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("script must be");
+  });
+
+  it("evaluate rejects scripts over the 100KB limit", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    await dispatchTool(tools, "create_session", {});
+    const res = await dispatchTool(tools, "evaluate", { script: "x".repeat(100_001) });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("100KB");
+  });
+
+  it("evaluate with no active session returns error", async () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const res = await dispatchTool(tools, "evaluate", { script: "1+1" });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("No active session");
   });
