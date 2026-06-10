@@ -1,12 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 36 endpoints | 483 tests (+14 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 37 endpoints | 485 tests (+15 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- Live session view COMPLETE (single-frame): GET /v1/view serves a JPEG
+  (Content-Type image/jpeg, optional ?quality=, validated pre-session). Contract
+  36→37: docs count + content category, both assertions, AnvilClient.view(). 2
+  integration + 1 E2E. MJPEG streaming deferred. 15 E2E total.
 - Live session view (frame capture): SessionActions.captureFrame(quality?) returns
-  a single JPEG (quality clamped 1–100, default 60). Gated-E2E checks JPEG magic
-  bytes. Service-layer first; streaming endpoint next. 14 E2E total.
+  a single JPEG (clamped 1–100, default 60). Gated-E2E magic-bytes check.
 - Browser contexts COMPLETE: cookie-isolation proven. Context-scoped
   navigateInContext/evaluateInContext + gated E2E (cookie in A invisible to B).
   Done end to end (service → routes → isolation).
@@ -70,18 +73,13 @@ v1.0.0 | 36 endpoints | 483 tests (+14 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Live session view** — Read-only view into a running session.
-   - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.
-   - DONE: SessionActions captureFrame(quality?) + gated-E2E JPEG magic-bytes check.
-   - NEXT (contract-changing): add `GET /v1/view` returning a single JPEG frame (Content-Type image/jpeg, optional ?quality=). Wire routes/view.ts in app.ts; bump /v1/docs 36→37 + new category, both docs-count assertions, add `view`/`captureFrame` to client.ts. Integration test (no-session 400, content-type) + E2E. Keep it a single-frame endpoint first; multi-frame MJPEG streaming can be a follow-up if needed (note: streaming holds a connection open — consider timeout/refcount implications before doing it).
+1. **MCP page tools** — keep MCP at parity with the HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (10 → 13 tools).
 
-2. **MCP page tools** — keep MCP at parity with the new HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (13 tools).
+2. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
 
-3. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
+3. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
 
-4. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
-
-5. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+4. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).

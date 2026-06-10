@@ -63,13 +63,13 @@ describe("integration: open server (no auth, no rate limit)", () => {
     expect(body).toHaveProperty("endpoints");
   });
 
-  it("GET /v1/docs reports version 1.0.0 and 36 endpoints", async () => {
+  it("GET /v1/docs reports version 1.0.0 and 37 endpoints", async () => {
     const res = await fetch(`${base}/v1/docs`);
     const body = await res.json();
     expect(body.version).toBe("1.0.0");
-    expect(body.endpoints).toBe(36);
+    expect(body.endpoints).toBe(37);
     const listed = Object.values(body.categories).flat() as unknown[];
-    expect(listed).toHaveLength(36);
+    expect(listed).toHaveLength(37);
   });
 
   it("unknown route returns 404 Not found", async () => {
@@ -198,6 +198,18 @@ describe("integration: open server (no auth, no rate limit)", () => {
     const res = await fetch(`${base}/v1/contexts/some-ctx?sessionId=ghost`, { method: "DELETE" });
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: "Session not found" });
+  });
+
+  it("GET /v1/view with no active session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/view`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("GET /v1/view rejects a non-numeric quality before resolving a session", async () => {
+    const res = await fetch(`${base}/v1/view?quality=abc&sessionId=ghost`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "quality must be a number" });
   });
 
   it("X-Session-Id header targets sessions the same as query param", async () => {

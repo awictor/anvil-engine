@@ -108,14 +108,14 @@ describe("integration: API endpoint contract consistency", () => {
     expect(lifecycleEndpoints).toHaveLength(5);
   });
 
-  it("total endpoint count is 36", () => {
+  it("total endpoint count is 37", () => {
     const allEndpoints = [
       "POST /v1/sessions", "GET /v1/sessions", "GET /v1/sessions/:id",
       "GET /v1/sessions/list", "POST /v1/sessions/:id/release",
       "POST /v1/actions/navigate", "POST /v1/actions/click", "POST /v1/actions/type",
       "POST /v1/actions/select", "POST /v1/actions/hover", "POST /v1/actions/wait",
       "POST /v1/actions/evaluate", "POST /v1/actions/upload",
-      "POST /v1/scrape", "POST /v1/pdf", "GET /v1/screenshot",
+      "POST /v1/scrape", "POST /v1/pdf", "GET /v1/screenshot", "GET /v1/view",
       "GET /v1/cookies", "POST /v1/cookies",
       "POST /v1/har/start", "POST /v1/har/stop", "GET /v1/har",
       "POST /v1/recording/start", "POST /v1/recording/stop", "GET /v1/recording",
@@ -125,7 +125,7 @@ describe("integration: API endpoint contract consistency", () => {
       "GET /v1/contexts", "POST /v1/contexts", "DELETE /v1/contexts/:id",
       "GET /v1/health", "GET /v1/metrics", "GET /v1/docs",
     ];
-    expect(allEndpoints).toHaveLength(36);
+    expect(allEndpoints).toHaveLength(37);
   });
 });
 

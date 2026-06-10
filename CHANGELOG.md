@@ -5,6 +5,13 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Live session view: `GET /v1/view` endpoint** — serves a single JPEG frame of
+  the session's viewport (`Content-Type: image/jpeg`, optional `?quality=`,
+  validated before session resolution). **Contract change: 37 endpoints** — added
+  to the `content` category + count, both docs-count test assertions, and an
+  `AnvilClient.view()` SDK method, all together. Single-frame for now; MJPEG
+  streaming is a deferred follow-up. 2 integration tests + 1 HTTP-driven E2E
+  (485 default, 15 E2E).
 - **Live session view: frame capture** — `SessionActions.captureFrame(quality?)`
   returns a single JPEG of the current viewport (quality clamped 1–100, default
   60), the building block for a streaming live view. Service-layer first; the

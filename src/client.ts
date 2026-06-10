@@ -96,6 +96,11 @@ export class AnvilClient {
     return this.request<ArrayBuffer>("GET", `/v1/screenshot${query}`, undefined, options?.sessionId);
   }
 
+  async view(options?: { quality?: number; sessionId?: string }) {
+    const query = options?.quality !== undefined ? `?quality=${options.quality}` : "";
+    return this.request<ArrayBuffer>("GET", `/v1/view${query}`, undefined, options?.sessionId);
+  }
+
   // Page actions
   async click(selector: string, options?: { button?: string; clickCount?: number; sessionId?: string }) {
     return this.request<{ success: boolean; selector: string }>(

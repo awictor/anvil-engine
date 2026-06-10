@@ -183,6 +183,23 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
     await app.sessionManager.destroy(session.id);
   }, 60000);
 
+  it("GET /v1/view serves a JPEG frame over HTTP", async () => {
+    const created = await (await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ headless: true }),
+    })).json();
+    const sid = created.id;
+
+    const res = await fetch(`${base}/v1/view?sessionId=${sid}&quality=40`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/jpeg");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    expect(Array.from(bytes.slice(0, 3))).toEqual([0xff, 0xd8, 0xff]);
+
+    await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
+  }, 60000);
+
   it("drives the /v1/pages routes over HTTP", async () => {
     const created = await (await fetch(`${base}/v1/sessions`, {
       method: "POST",

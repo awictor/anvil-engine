@@ -19,6 +19,7 @@ import { recordingRoutes } from "./routes/recording.js";
 import { downloadRoutes } from "./routes/downloads.js";
 import { pageRoutes } from "./routes/pages.js";
 import { contextRoutes } from "./routes/contexts.js";
+import { viewRoutes } from "./routes/view.js";
 import { healthRoutes } from "./routes/health.js";
 import { toPersisted, saveToDisk, loadPersisted, restoreSessions } from "./persistence.js";
 
@@ -57,6 +58,7 @@ export function buildApp(config: Config): App {
   router.addAll(downloadRoutes(deps));
   router.addAll(pageRoutes(deps));
   router.addAll(contextRoutes(deps));
+  router.addAll(viewRoutes(deps));
   router.addAll(healthRoutes(deps));
 
   // Order is load-bearing: CORS (+ OPTIONS short-circuit) -> rate limit -> auth.
