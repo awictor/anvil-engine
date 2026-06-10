@@ -144,6 +144,21 @@ export class AnvilClient {
     return this.request<{ injected: number }>("POST", "/v1/cookies", { cookies }, sessionId);
   }
 
+  // Pages / tabs
+  async listPages(sessionId?: string) {
+    return this.request<{ pages: Array<{ index: number; url: string; title: string }> }>(
+      "GET", "/v1/pages", undefined, sessionId,
+    );
+  }
+
+  async openPage(options?: { url?: string; sessionId?: string }) {
+    return this.request<{ index: number; url: string }>("POST", "/v1/pages", { url: options?.url }, options?.sessionId);
+  }
+
+  async closePage(index: number, sessionId?: string) {
+    return this.request<{ closed: number; remaining: number }>("DELETE", `/v1/pages/${index}`, undefined, sessionId);
+  }
+
   // HAR
   async startHar(sessionId?: string) {
     return this.request<{ recording: boolean }>("POST", "/v1/har/start", undefined, sessionId);

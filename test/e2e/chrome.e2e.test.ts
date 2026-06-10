@@ -130,9 +130,13 @@ describe.skipIf(!chromeAvailable())("e2e: real Chrome lifecycle", () => {
 
 describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", () => {
   let app: App;
+  let base: string;
 
   beforeAll(async () => {
     app = buildApp(loadConfig({ ...process.env, ANVIL_API_KEY: "", ANVIL_RATE_LIMIT_RPM: "" }));
+    await new Promise<void>((resolve) => app.server.listen(0, "127.0.0.1", resolve));
+    const addr = app.server.address();
+    base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
   });
 
   afterAll(async () => {
@@ -170,5 +174,33 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
     await expect(app.actions.closePage(session, 0)).rejects.toThrow(/last remaining page/);
 
     await app.sessionManager.destroy(session.id);
+  }, 60000);
+
+  it("drives the /v1/pages routes over HTTP", async () => {
+    const created = await (await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ headless: true }),
+    })).json();
+    const sid = created.id;
+
+    let list = await (await fetch(`${base}/v1/pages?sessionId=${sid}`)).json();
+    expect(list.pages).toHaveLength(1);
+
+    const opened = await (await fetch(`${base}/v1/pages?sessionId=${sid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "about:blank" }),
+    })).json();
+    expect(opened.index).toBeGreaterThanOrEqual(1);
+
+    list = await (await fetch(`${base}/v1/pages?sessionId=${sid}`)).json();
+    expect(list.pages).toHaveLength(2);
+
+    const closeRes = await fetch(`${base}/v1/pages/${opened.index}?sessionId=${sid}`, { method: "DELETE" });
+    expect(closeRes.status).toBe(200);
+    expect((await closeRes.json()).remaining).toBe(1);
+
+    await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
   }, 60000);
 });

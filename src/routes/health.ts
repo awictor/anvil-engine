@@ -55,7 +55,7 @@ export function healthRoutes(deps: Deps): Route[] {
       handler: ({ res }) => {
         json(res, 200, {
           version: "1.0.0",
-          endpoints: 30,
+          endpoints: 33,
           categories: {
             sessions: [
               { method: "POST", path: "/v1/sessions", description: "Create a new browser session" },
@@ -95,6 +95,11 @@ export function healthRoutes(deps: Deps): Route[] {
             files: [
               { method: "GET", path: "/v1/downloads", description: "List downloaded files" },
               { method: "GET", path: "/v1/downloads/:filename", description: "Download a file" },
+            ],
+            pages: [
+              { method: "GET", path: "/v1/pages", description: "List open pages in the session" },
+              { method: "POST", path: "/v1/pages", description: "Open a new page (optional url)" },
+              { method: "DELETE", path: "/v1/pages/:index", description: "Close the page at index" },
             ],
             observability: [
               { method: "GET", path: "/v1/health", description: "Health check" },

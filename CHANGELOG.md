@@ -5,6 +5,13 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Multi-page / tabs: HTTP routes** — new `/v1/pages` endpoints expose the
+  multi-page service methods: `GET /v1/pages` (list), `POST /v1/pages` (open,
+  optional url, blocks file/js/data), `DELETE /v1/pages/:index` (close, validates
+  integer index). **Contract change: endpoint count 30 → 33** — `/v1/docs` gains a
+  `pages` category and the count, `test/integration.test.ts`, and the `AnvilClient`
+  SDK (`listPages`/`openPage`/`closePage`) were all updated together. 4 new
+  integration tests + 1 HTTP-driven E2E (480 default, 9 E2E).
 - **Multi-page / tabs: service layer** — `SessionActions` gains `listPages`,
   `openPage` (blocks file/js/data protocols), and `closePage` (validates index,
   refuses to close the last page), operating over the session's cached browser.

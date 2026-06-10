@@ -63,13 +63,13 @@ describe("integration: open server (no auth, no rate limit)", () => {
     expect(body).toHaveProperty("endpoints");
   });
 
-  it("GET /v1/docs reports version 1.0.0 and 30 endpoints", async () => {
+  it("GET /v1/docs reports version 1.0.0 and 33 endpoints", async () => {
     const res = await fetch(`${base}/v1/docs`);
     const body = await res.json();
     expect(body.version).toBe("1.0.0");
-    expect(body.endpoints).toBe(30);
+    expect(body.endpoints).toBe(33);
     const listed = Object.values(body.categories).flat() as unknown[];
-    expect(listed).toHaveLength(30);
+    expect(listed).toHaveLength(33);
   });
 
   it("unknown route returns 404 Not found", async () => {
@@ -152,6 +152,34 @@ describe("integration: open server (no auth, no rate limit)", () => {
     });
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: "Session not found" });
+  });
+
+  it("GET /v1/pages with no active session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/pages`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("POST /v1/pages blocks dangerous protocols before resolving a session", async () => {
+    const res = await fetch(`${base}/v1/pages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "file:///etc/passwd" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Blocked protocol: only http/https allowed" });
+  });
+
+  it("DELETE /v1/pages/:index rejects a non-integer index", async () => {
+    const res = await fetch(`${base}/v1/pages/abc`, { method: "DELETE" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "page index must be a non-negative integer" });
+  });
+
+  it("DELETE /v1/pages/:index with valid index but no session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/pages/0`, { method: "DELETE" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
   });
 
   it("X-Session-Id header targets sessions the same as query param", async () => {

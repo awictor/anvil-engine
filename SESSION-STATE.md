@@ -1,12 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 476 tests (+8 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
+v1.0.0 | 33 endpoints | 480 tests (+9 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
 
 ## Last Completed
-- Multi-page/tabs (service layer): SessionActions listPages/openPage/closePage over
-  the cached browser. openPage blocks file/js/data; closePage validates index +
-  refuses last page. 2 gated-E2E tests. Routes are the next sub-task. No contract change.
+- Multi-page/tabs COMPLETE (HTTP routes): /v1/pages GET (list) + POST (open) +
+  DELETE /v1/pages/:index (close) in routes/pages.ts. Contract 30→33: docs count +
+  pages category, integration.test.ts (both count assertions), 3 SDK client methods
+  all updated together. 4 integration tests + 1 HTTP-driven E2E (480 default, 9 E2E).
+- Multi-page/tabs (service layer): SessionActions listPages/openPage/closePage.
+  openPage blocks file/js/data; closePage validates index + refuses last page.
 - Session persistence COMPLETE: restore on startup. When ANVIL_PERSIST_PATH has a
   saved file, app.start() re-creates each session (fresh id, original options) +
   re-injects cookies. restoreSessions isolates per-record failures. 4 tests.
@@ -52,19 +55,17 @@ v1.0.0 | 30 endpoints | 476 tests (+8 gated E2E with real Chrome) | MCP server (
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Multi-tab / page support** — Address multiple pages within one session.
-   - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.
-   - DONE: SessionActions listPages/openPage/closePage + 2 gated-E2E tests.
-   - NEXT (actionable sub-task): add a `src/routes/pages.ts` module wired in app.ts with GET /v1/pages (list), POST /v1/pages (open, optional url), DELETE /v1/pages/:index (close). This ADDS 3 endpoints → bump /v1/docs count from 30 to 33 AND update the docs `files`/new `pages` category, `test/integration.test.ts` (hard-coded 30 → 33 + endpoint list), and add the 3 SDK methods to `src/client.ts`. Add integration tests for validation/404 paths (no Chrome needed) + an E2E that drives the routes. This is the contract-changing iteration — do all consistency updates together.
+1. **README + API reference** — Make the repo presentable and usable.
+   - Success: top-level README.md (what/why/quickstart/run-without-docker/Docker/env vars table — INCLUDING ANVIL_PERSIST_PATH with a note that cookies are stored plaintext at that path); API reference for the 33 endpoints (derive from /v1/docs); SDK (`client.ts`) usage example; link to docs/MCP.md; CHANGELOG already seeded.
+   - Single-iteration scope: write README.md only (link out to docs/MCP.md rather than duplicating). No code change.
 
-2. **README + API reference** — Make the repo presentable and usable.
-   - Success: top-level README.md (what/why/quickstart/run-without-docker/Docker/env vars table — INCLUDING ANVIL_PERSIST_PATH with a note that cookies are stored plaintext at that path); API reference derived from /v1/docs; SDK (`client.ts`) usage examples; link to docs/MCP.md; CHANGELOG already seeded.
-
-3. **Browser contexts** — Isolated incognito contexts within one browser process.
+2. **Browser contexts** — Isolated incognito contexts within one browser process.
    - Success: route + SessionActions support for creating/using/closing a context; isolation test (cookies in context A invisible to B). Contract updates in same iteration.
 
-4. **Live session view** — Read-only view into a running session.
+3. **Live session view** — Read-only view into a running session.
    - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.
+
+4. **MCP page tools** — keep MCP at parity with the new HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (13 tools).
 
 5. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
 
