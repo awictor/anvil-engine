@@ -4,6 +4,8 @@
 v1.0.0 | 37 endpoints | 498 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- Closed "preserve session ids across restore" as WON'T-DO (see Decisions): no
+  client depends on stable ids across restart; cost > benefit. Backlog/docs only.
 - Fixed metrics histogram cardinality leak: normalizeRoute didn't collapse
   /v1/pages/:index or /v1/contexts/:id (UUID ids → unbounded histogram keys). Now
   both collapse to templates. 5 normalizeRoute tests (498 total). Non-E2E.
@@ -90,9 +92,15 @@ Each item is done when ALL success criteria pass. One item per iteration.
 
 2. **Crash-relaunch E2E (deferred — needs disk headroom)** — gated E2E that kills a session's Chrome pid mid-life, makes a request to trigger relaunch, and asserts (a) the request succeeds and (b) no orphaned anvil-downloads-* dir remains. Validates the relaunch download-dir fix end to end. Only run when Temp has >5G free.
 
-3. **Persistence follow-up (b)** — consider preserving session ids across restore (currently fresh ids on restart). Only worth doing if a client depends on stable ids; otherwise close as won't-do. Low priority.
+3. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
-4. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+## Decisions (closed items)
+- **Preserve session ids across restore: WON'T-DO** (2026-06-10). Restored sessions
+  keep fresh ids. No known client depends on stable ids across restart: restart is
+  graceful-shutdown-only and rare; clients re-discover via GET /v1/sessions[/list]
+  after restart regardless; preserving ids would require create() to accept an
+  external id, complicating the randomUUID invariant + adding a collision surface.
+  Cost > benefit for an internal tool. Reopen only if a real stable-id dependency appears.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).
