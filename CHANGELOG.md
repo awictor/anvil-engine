@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **Metrics histogram cardinality leak** — `normalizeRoute` collapsed the older
+  param routes but not the newer `/v1/pages/:index` and `/v1/contexts/:id`. Since
+  context ids are UUIDs, every `DELETE /v1/contexts/<uuid>` created a distinct
+  histogram key — unbounded growth in the in-memory metrics registry. Now both
+  collapse to their templates. 5 new tests for normalizeRoute (498 total).
 - **Download-dir leak on crash-relaunch** — `relaunch` previously overwrote the
   fresh browser's `downloadDir` with the old one, orphaning the freshly-created
   temp dir (never cleaned on destroy) AND mistracking where Chrome actually wrote

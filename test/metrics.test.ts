@@ -1,4 +1,37 @@
 import { describe, it, expect } from "vitest";
+import { normalizeRoute } from "../src/metrics.js";
+
+describe("normalizeRoute (histogram cardinality)", () => {
+  it("collapses session id, release, and download param routes", () => {
+    expect(normalizeRoute("GET", "/v1/sessions/abc-123")).toBe("GET /v1/sessions/:id");
+    expect(normalizeRoute("POST", "/v1/sessions/abc-123/release")).toBe("POST /v1/sessions/:id/release");
+    expect(normalizeRoute("GET", "/v1/downloads/report.pdf")).toBe("GET /v1/downloads/:filename");
+  });
+
+  it("does NOT collapse /v1/sessions/list (it is a real static route)", () => {
+    expect(normalizeRoute("GET", "/v1/sessions/list")).toBe("GET /v1/sessions/list");
+  });
+
+  it("collapses /v1/pages/:index so distinct indices share one key", () => {
+    expect(normalizeRoute("DELETE", "/v1/pages/0")).toBe("DELETE /v1/pages/:index");
+    expect(normalizeRoute("DELETE", "/v1/pages/5")).toBe("DELETE /v1/pages/:index");
+  });
+
+  it("collapses /v1/contexts/:id so distinct UUIDs share one key", () => {
+    const a = normalizeRoute("DELETE", "/v1/contexts/11111111-1111-1111-1111-111111111111");
+    const b = normalizeRoute("DELETE", "/v1/contexts/22222222-2222-2222-2222-222222222222");
+    expect(a).toBe("DELETE /v1/contexts/:id");
+    expect(b).toBe("DELETE /v1/contexts/:id");
+    expect(a).toBe(b);
+  });
+
+  it("leaves static routes (incl. /v1/pages, /v1/contexts, /v1/view) untouched", () => {
+    expect(normalizeRoute("GET", "/v1/pages")).toBe("GET /v1/pages");
+    expect(normalizeRoute("GET", "/v1/contexts")).toBe("GET /v1/contexts");
+    expect(normalizeRoute("GET", "/v1/view")).toBe("GET /v1/view");
+    expect(normalizeRoute("GET", "/v1/health")).toBe("GET /v1/health");
+  });
+});
 
 describe("anvil-engine metrics endpoint", () => {
   describe("GET /v1/metrics response shape", () => {

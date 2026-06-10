@@ -27,6 +27,11 @@ export function normalizeRoute(method: string, pathname: string): string {
     route = sessionMatch[2] ? "/v1/sessions/:id/release" : "/v1/sessions/:id";
   } else if (/^\/v1\/downloads\/.+$/.test(pathname)) {
     route = "/v1/downloads/:filename";
+  } else if (/^\/v1\/pages\/[^/]+$/.test(pathname)) {
+    route = "/v1/pages/:index";
+  } else if (/^\/v1\/contexts\/[^/]+$/.test(pathname)) {
+    // Context ids are UUIDs — collapse so histogram cardinality stays bounded.
+    route = "/v1/contexts/:id";
   }
   return `${method} ${route}`;
 }

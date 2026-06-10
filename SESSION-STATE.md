@@ -1,14 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 37 endpoints | 493 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 37 endpoints | 498 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
-- Fixed download-dir leak on crash-relaunch: relaunch overwrote fresh.downloadDir
-  with the old dir, orphaning the new one + mistracking downloads. Now keeps fresh,
-  removes old. Shared removeDownloadDir helper (destroy + relaunch) + 4 unit tests.
-  Reduces temp-dir accumulation behind the disk issue. (E2E skipped this iter —
-  disk at 2G; the crash path isn't covered by existing E2E anyway. 493 default.)
+- Fixed metrics histogram cardinality leak: normalizeRoute didn't collapse
+  /v1/pages/:index or /v1/contexts/:id (UUID ids → unbounded histogram keys). Now
+  both collapse to templates. 5 normalizeRoute tests (498 total). Non-E2E.
+- Fixed download-dir leak on crash-relaunch: relaunch orphaned the fresh dir +
+  mistracked downloads. Now keeps fresh, removes old. Shared removeDownloadDir
+  helper + 4 unit tests. (E2E skipped — disk at 2G.)
 - Repo hygiene: added .gitignore + untracked node_modules (7105) and dist (54)
   via git rm --cached (files kept on disk). Working tree clean. docker.test.ts green.
 - Persistence round-trip E2E: gated real-Chrome test proves serialize→save→load→
