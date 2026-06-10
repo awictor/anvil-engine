@@ -257,6 +257,30 @@ export class SessionActions {
     return { closed: contextId, remaining: byId.size };
   }
 
+  /** Resolves a tracked context and returns a usable page within it (reusing the first, else opening one). */
+  private async contextPage(session: Session, contextId: string): Promise<Page> {
+    const context = this.contexts.get(session.id)?.get(contextId);
+    if (!context) throw new Error(`Context ${contextId} not found`);
+    const pages = await context.pages();
+    return pages[0] || (await context.newPage());
+  }
+
+  async navigateInContext(session: Session, contextId: string, url: string): Promise<{ url: string; title: string }> {
+    if (/^(file|javascript|data):/i.test(url)) throw new Error("Blocked protocol: only http/https allowed");
+    return this.run(session, async () => {
+      const page = await this.contextPage(session, contextId);
+      await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+      return { url: page.url(), title: await page.title() };
+    });
+  }
+
+  async evaluateInContext(session: Session, contextId: string, script: string): Promise<unknown> {
+    return this.run(session, async () => {
+      const page = await this.contextPage(session, contextId);
+      return page.evaluate(script);
+    });
+  }
+
   // --- element actions ---
 
   async click(session: Session, params: { selector: string; button?: string; clickCount?: number }): Promise<void> {

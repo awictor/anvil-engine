@@ -266,4 +266,25 @@ describe.skipIf(!chromeAvailable())("e2e: browser contexts (SessionActions)", ()
 
     await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
   }, 60000);
+
+  it("cookies set in one context are invisible to another (isolation proof)", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+    const url = "https://example.com/";
+
+    const a = await app.actions.createContext(session);
+    const b = await app.actions.createContext(session);
+
+    // Navigate each context's page to the same origin, then set a cookie only in A.
+    await app.actions.navigateInContext(session, a.contextId, url);
+    await app.actions.navigateInContext(session, b.contextId, url);
+    await app.actions.evaluateInContext(session, a.contextId, "document.cookie = 'anvil_iso=ctxA; path=/'");
+
+    const cookiesA = await app.actions.evaluateInContext(session, a.contextId, "document.cookie");
+    const cookiesB = await app.actions.evaluateInContext(session, b.contextId, "document.cookie");
+
+    expect(String(cookiesA)).toContain("anvil_iso=ctxA");
+    expect(String(cookiesB)).not.toContain("anvil_iso");
+
+    await app.sessionManager.destroy(session.id);
+  }, 60000);
 });

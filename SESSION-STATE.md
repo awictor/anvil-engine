@@ -1,13 +1,16 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 36 endpoints | 483 tests (+12 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in)
+v1.0.0 | 36 endpoints | 483 tests (+13 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
-- Browser contexts (HTTP routes): /v1/contexts GET (list) + POST (create) + DELETE
-  /v1/contexts/:id (close) in routes/contexts.ts. Contract 33→36: docs count +
-  contexts category, both docs-count assertions, 3 SDK methods. 3 integration tests
-  + 1 HTTP-driven E2E (483 default, 12 E2E). Cookie-isolation proof still pending.
+- Browser contexts COMPLETE: cookie-isolation proven. Added context-scoped
+  navigateInContext/evaluateInContext + a gated E2E that sets a cookie in context A
+  and confirms context B (same origin) can't see it. Feature done end to end
+  (service → routes → isolation). 13 E2E total.
+- Browser contexts (HTTP routes): /v1/contexts GET/POST + DELETE /v1/contexts/:id.
+  Contract 33→36: docs count + contexts category, both docs-count assertions, 3 SDK
+  methods. 3 integration tests + 1 HTTP-driven E2E.
 - Browser contexts (service layer): SessionActions createContext/listContexts/
   closeContext over per-session BrowserContext Map, cleaned up on destroy. 2 E2E tests.
 - README: top-level README.md — install, run (with/without Docker), MCP pointer,
@@ -65,22 +68,17 @@ v1.0.0 | 36 endpoints | 483 tests (+12 gated E2E with real Chrome) | MCP server 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Browser contexts** — Isolated incognito contexts within one browser process.
-   - Success: route + SessionActions support for creating/using/closing a context; isolation test (cookies in context A invisible to B). Contract updates in same iteration.
-   - DONE: SessionActions createContext/listContexts/closeContext + 2 gated-E2E tests + destroy cleanup.
-   - DONE: /v1/contexts routes (33→36), docs/integration/client all updated, 3 integration + 1 E2E.
-   - NEXT (completes the item): cookie-isolation E2E. Add a context-scoped variant — e.g. SessionActions method that opens a page in a named context, sets a cookie there, and checks a page in the default (or another) context can't see it. Prove isolation in a gated E2E. Only then mark this item DONE. If context-scoped navigation needs a new param/method, scope it minimally.
-
-2. **Live session view** — Read-only view into a running session.
+1. **Live session view** — Read-only view into a running session.
    - Success: endpoint streaming periodic JPEG frames (CDP Page.screencast or polled screenshot); test for endpoint shape/headers. Contract updates in same iteration.
+   - First actionable sub-task: add SessionActions captureFrame(session) returning a single JPEG (page.screenshot type:"jpeg", quality param) with a gated-E2E check of the JPEG magic bytes (FF D8 FF), BEFORE the streaming endpoint — service-layer first.
 
-3. **MCP page tools** — keep MCP at parity with the new HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (13 tools).
+2. **MCP page tools** — keep MCP at parity with the new HTTP surface: add list_pages/open_page/close_page to createTools, delegating to the SessionActions page methods. Dispatch tests + update both tools/list assertions (13 tools).
 
-4. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
+3. **Persistence follow-ups** — (a) gated E2E test for a real-Chrome save→restart→restore round-trip; (b) consider preserving session ids across restore (currently fresh ids) if clients depend on stable ids.
 
-5. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
+4. **Repo hygiene: gitignore node_modules** — node_modules is currently tracked in git (no .gitignore), so dependency installs produce huge noisy diffs. Add a `.gitignore` (node_modules, dist, *.log, coverage) and `git rm -r --cached node_modules dist` in one commit. Verify `git status` is clean afterward and the build still works. CAUTION: this is a large tree-touching change — do it as its own isolated iteration.
 
-6. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+5. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Guardrails
 - Gate every commit on `npx tsc --noEmit` + `npx vitest run` (424 baseline, never drop).

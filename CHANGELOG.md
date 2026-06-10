@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Browser contexts: isolation proven (feature complete)** — added context-scoped
+  `navigateInContext` / `evaluateInContext` service methods and a gated E2E that
+  sets a cookie in one context and confirms a second context on the same origin
+  cannot see it. This satisfies the isolation success criterion; browser contexts
+  (service layer → routes → isolation) are now complete. 1 new E2E (13 E2E total).
 - **Browser contexts: HTTP routes** — new `/v1/contexts` endpoints: `GET` (list),
   `POST` (create), `DELETE /v1/contexts/:id` (close). **Contract change: 33 → 36
   endpoints** — `/v1/docs` gains a `contexts` category and the count,
