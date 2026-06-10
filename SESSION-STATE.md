@@ -1,13 +1,15 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 30 endpoints | 457 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools)
+v1.0.0 | 30 endpoints | 457 tests (+6 gated E2E with real Chrome) | MCP server (stdio, 10 tools, documented)
 
 ## Last Completed
+- MCP server docs: `docs/MCP.md` — run instructions, `.mcp.json` config for Claude
+  Code, all 10 tools with args/returns, MCP-relevant env vars (HTTP-only vars
+  clarified as no-ops for stdio). Completes the MCP server layer backlog item.
 - MCP tools get_cookies + set_cookies: added to `createTools` (10 tools total,
   core parity complete). get_cookies returns { cookies }; set_cookies validates
-  the array and returns { injected }. Delegate to SessionActions. 4 dispatch
-  tests (457 total). No HTTP contract change.
+  the array and returns { injected }. 4 dispatch tests (457 total).
 - MCP tool evaluate: added to `createTools`. Validates script non-empty + 100KB
   cap (matching the HTTP route); delegates to SessionActions.evaluate. 4 tests.
 - MCP tools click + type: added to `createTools`. Both validate selector (and
@@ -39,17 +41,9 @@ v1.0.0 | 30 endpoints | 457 tests (+6 gated E2E with real Chrome) | MCP server (
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **MCP server layer** — Expose SessionActions as MCP tools so Claude Code / MeshClaw can drive browser sessions directly.
-   - DONE: tool registry + dispatcher (`src/mcp/tools.ts`), create_session/navigate/release.
-   - DONE: stdio transport (`src/mcp/server.ts`), `mcp` npm script, wiring tests. `npm run mcp` works.
-   - DONE: scrape + screenshot tools (5 total).
-   - DONE: click + type tools (7 total).
-   - DONE: evaluate tool (8 total).
-   - DONE: get_cookies + set_cookies tools (10 total, core parity complete).
-   - NEXT (actionable sub-task): document the MCP server — add a `docs/MCP.md` (or a section in README) listing the 10 tools with their args, how to run `npm run mcp`, and a copy-paste `mcp.json` / `.mcp.json` example config for Claude Code (command `node dist/mcp/server.js` or `npx tsx src/mcp/server.ts`, env vars). No code change; verify the tool list in the doc matches `createTools` exactly.
-
-2. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
+1. **Session persistence across restart** — Survive an engine restart without losing session metadata + cookies.
    - Success: opt-in flag/env; on graceful shutdown serialize session list + cookies to disk; on startup offer to restore; round-trip test (serialize → deserialize → cookies match). No always-on disk writes.
+   - First actionable sub-task: add a `src/persistence.ts` with `serializeSessions(sessions)` → JSON and `deserializeSessions(json)` pure functions (session id, options, createdAt, cookies array), plus unit tests for the round-trip. Wiring into shutdown/startup comes in a follow-up iteration. No HTTP contract change yet.
 
 3. **Multi-tab / page support** — Address multiple pages within one session.
    - Success: new route(s) (e.g. /v1/pages list/open/close, page targeting param), matching SessionActions methods, tests. Bump /v1/docs count + update integration.test.ts + client.ts.

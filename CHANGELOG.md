@@ -5,6 +5,11 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **MCP server docs** — `docs/MCP.md` documents how to run the stdio MCP server
+  (`npm run mcp` / `node dist/mcp/server.js`), a copy-paste `.mcp.json` config for
+  Claude Code, all 10 tools with args/returns, and the env vars that actually
+  affect the MCP path (clarifying that HTTP-only settings do not). Completes the
+  MCP server layer backlog item.
 - **MCP tools: get_cookies + set_cookies** — the MCP tool set grows from 8 to 10,
   completing core parity with the HTTP actions. get_cookies returns `{ cookies }`;
   set_cookies validates the array (matching the HTTP route) and returns
