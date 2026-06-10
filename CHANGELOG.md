@@ -5,6 +5,13 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **Browser contexts: HTTP routes** — new `/v1/contexts` endpoints: `GET` (list),
+  `POST` (create), `DELETE /v1/contexts/:id` (close). **Contract change: 33 → 36
+  endpoints** — `/v1/docs` gains a `contexts` category and the count,
+  `test/integration.test.ts` + `integration/server.test.ts` docs assertions, and
+  the `AnvilClient` SDK (`listContexts`/`createContext`/`closeContext`) all updated
+  together. 3 new integration tests + 1 HTTP-driven E2E (483 default, 12 E2E).
+  (Cookie-isolation proof is the remaining sub-task for this feature.)
 - **Browser contexts: service layer** — `SessionActions` gains `createContext`,
   `listContexts`, and `closeContext`, tracking isolated `BrowserContext`s per
   session in a Map (keyed by generated id), cleaned up on session destroy.

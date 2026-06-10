@@ -159,6 +159,19 @@ export class AnvilClient {
     return this.request<{ closed: number; remaining: number }>("DELETE", `/v1/pages/${index}`, undefined, sessionId);
   }
 
+  // Browser contexts
+  async listContexts(sessionId?: string) {
+    return this.request<{ contextIds: string[] }>("GET", "/v1/contexts", undefined, sessionId);
+  }
+
+  async createContext(sessionId?: string) {
+    return this.request<{ contextId: string }>("POST", "/v1/contexts", undefined, sessionId);
+  }
+
+  async closeContext(contextId: string, sessionId?: string) {
+    return this.request<{ closed: string; remaining: number }>("DELETE", `/v1/contexts/${contextId}`, undefined, sessionId);
+  }
+
   // HAR
   async startHar(sessionId?: string) {
     return this.request<{ recording: boolean }>("POST", "/v1/har/start", undefined, sessionId);

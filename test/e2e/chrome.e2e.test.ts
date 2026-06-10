@@ -207,9 +207,13 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
 
 describe.skipIf(!chromeAvailable())("e2e: browser contexts (SessionActions)", () => {
   let app: App;
+  let base: string;
 
   beforeAll(async () => {
     app = buildApp(loadConfig({ ...process.env, ANVIL_API_KEY: "", ANVIL_RATE_LIMIT_RPM: "" }));
+    await new Promise<void>((resolve) => app.server.listen(0, "127.0.0.1", resolve));
+    const addr = app.server.address();
+    base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
   });
 
   afterAll(async () => {
@@ -237,5 +241,29 @@ describe.skipIf(!chromeAvailable())("e2e: browser contexts (SessionActions)", ()
     const session = await app.sessionManager.create({ headless: true });
     await expect(app.actions.closeContext(session, "nope")).rejects.toThrow(/not found/);
     await app.sessionManager.destroy(session.id);
+  }, 60000);
+
+  it("drives the /v1/contexts routes over HTTP", async () => {
+    const created = await (await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ headless: true }),
+    })).json();
+    const sid = created.id;
+
+    let list = await (await fetch(`${base}/v1/contexts?sessionId=${sid}`)).json();
+    expect(list.contextIds).toHaveLength(0);
+
+    const ctx = await (await fetch(`${base}/v1/contexts?sessionId=${sid}`, { method: "POST" })).json();
+    expect(typeof ctx.contextId).toBe("string");
+
+    list = await (await fetch(`${base}/v1/contexts?sessionId=${sid}`)).json();
+    expect(list.contextIds).toEqual([ctx.contextId]);
+
+    const closeRes = await fetch(`${base}/v1/contexts/${ctx.contextId}?sessionId=${sid}`, { method: "DELETE" });
+    expect(closeRes.status).toBe(200);
+    expect((await closeRes.json()).remaining).toBe(0);
+
+    await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
   }, 60000);
 });

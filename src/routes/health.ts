@@ -55,7 +55,7 @@ export function healthRoutes(deps: Deps): Route[] {
       handler: ({ res }) => {
         json(res, 200, {
           version: "1.0.0",
-          endpoints: 33,
+          endpoints: 36,
           categories: {
             sessions: [
               { method: "POST", path: "/v1/sessions", description: "Create a new browser session" },
@@ -100,6 +100,11 @@ export function healthRoutes(deps: Deps): Route[] {
               { method: "GET", path: "/v1/pages", description: "List open pages in the session" },
               { method: "POST", path: "/v1/pages", description: "Open a new page (optional url)" },
               { method: "DELETE", path: "/v1/pages/:index", description: "Close the page at index" },
+            ],
+            contexts: [
+              { method: "GET", path: "/v1/contexts", description: "List isolated browser contexts" },
+              { method: "POST", path: "/v1/contexts", description: "Create an isolated browser context" },
+              { method: "DELETE", path: "/v1/contexts/:id", description: "Close a browser context" },
             ],
             observability: [
               { method: "GET", path: "/v1/health", description: "Health check" },

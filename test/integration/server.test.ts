@@ -63,13 +63,13 @@ describe("integration: open server (no auth, no rate limit)", () => {
     expect(body).toHaveProperty("endpoints");
   });
 
-  it("GET /v1/docs reports version 1.0.0 and 33 endpoints", async () => {
+  it("GET /v1/docs reports version 1.0.0 and 36 endpoints", async () => {
     const res = await fetch(`${base}/v1/docs`);
     const body = await res.json();
     expect(body.version).toBe("1.0.0");
-    expect(body.endpoints).toBe(33);
+    expect(body.endpoints).toBe(36);
     const listed = Object.values(body.categories).flat() as unknown[];
-    expect(listed).toHaveLength(33);
+    expect(listed).toHaveLength(36);
   });
 
   it("unknown route returns 404 Not found", async () => {
@@ -180,6 +180,24 @@ describe("integration: open server (no auth, no rate limit)", () => {
     const res = await fetch(`${base}/v1/pages/0`, { method: "DELETE" });
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("GET /v1/contexts with no active session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/contexts`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("POST /v1/contexts with no active session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/contexts`, { method: "POST" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("DELETE /v1/contexts/:id with unknown session returns 404 Session not found", async () => {
+    const res = await fetch(`${base}/v1/contexts/some-ctx?sessionId=ghost`, { method: "DELETE" });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Session not found" });
   });
 
   it("X-Session-Id header targets sessions the same as query param", async () => {
