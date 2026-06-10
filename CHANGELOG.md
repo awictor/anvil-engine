@@ -5,6 +5,10 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Added
+- **README** — top-level `README.md`: what/why, install, run (with/without Docker),
+  MCP server pointer, quickstart (curl + `AnvilClient` SDK), a 33-endpoint API
+  overview, a full env-var table (including the `ANVIL_PERSIST_PATH` plaintext-
+  cookie caveat), and testing instructions. Every fact derived from source.
 - **Multi-page / tabs: HTTP routes** — new `/v1/pages` endpoints expose the
   multi-page service methods: `GET /v1/pages` (list), `POST /v1/pages` (open,
   optional url, blocks file/js/data), `DELETE /v1/pages/:index` (close, validates
