@@ -21,6 +21,7 @@ export interface BrowserProcess {
     proxyCredentials?: ProxyCredentials;
     downloadDir?: string;
 }
+export declare function findChromePath(): string;
 export declare function getNextCdpPort(): number;
 export declare function validateProxyUrl(proxy: string): void;
 export declare function launchBrowser(options?: LaunchOptions): Promise<BrowserProcess>;

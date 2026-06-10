@@ -46,7 +46,7 @@ const CHROME_PATHS: Record<string, string[]> = {
   ],
 };
 
-function findChromePath(): string {
+export function findChromePath(): string {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
 
   const paths = CHROME_PATHS[platform()] || CHROME_PATHS.linux;

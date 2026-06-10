@@ -19,7 +19,7 @@ const CHROME_PATHS = {
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
     ],
 };
-function findChromePath() {
+export function findChromePath() {
     if (process.env.CHROME_PATH)
         return process.env.CHROME_PATH;
     const paths = CHROME_PATHS[platform()] || CHROME_PATHS.linux;
