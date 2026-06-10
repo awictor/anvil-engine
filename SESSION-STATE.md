@@ -1,9 +1,12 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 37 endpoints | 498 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 37 endpoints | 500 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
 
 ## Last Completed
+- Fixed unbounded CDP port counter: getNextCdpPort climbed past 65535 over a long
+  engine lifetime (~56k sessions) → invalid TCP ports. Now bounded 9222–65000 with
+  wraparound. 2 tests (500 total). Non-E2E.
 - Closed "preserve session ids across restore" as WON'T-DO (see Decisions): no
   client depends on stable ids across restart; cost > benefit. Backlog/docs only.
 - Fixed metrics histogram cardinality leak: normalizeRoute didn't collapse

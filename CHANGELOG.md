@@ -5,6 +5,10 @@ All notable changes to the Anvil Engine are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **Unbounded CDP port counter** — `getNextCdpPort` did `nextPort++` without a
+  ceiling, so a long-running engine (~56k sessions over its lifetime) would
+  eventually hand out port numbers above 65535 — invalid TCP ports that fail
+  Chrome launch. Now bounded to 9222–65000 with wraparound. 2 new tests.
 - **Metrics histogram cardinality leak** — `normalizeRoute` collapsed the older
   param routes but not the newer `/v1/pages/:index` and `/v1/contexts/:id`. Since
   context ids are UUIDs, every `DELETE /v1/contexts/<uuid>` created a distinct

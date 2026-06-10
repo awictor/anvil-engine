@@ -58,10 +58,17 @@ export function findChromePath(): string {
   );
 }
 
-let nextPort = 9222;
+const CDP_PORT_BASE = 9222;
+const CDP_PORT_CEILING = 65000; // stay within valid TCP range (< 65536)
+let nextPort = CDP_PORT_BASE;
 
 export function getNextCdpPort(): number {
-  return nextPort++;
+  const port = nextPort;
+  // Wrap back to base instead of climbing past the valid TCP range over a long
+  // engine lifetime (~56k sessions) — an unbounded counter would eventually
+  // emit invalid ports (>65535) and fail Chrome launch.
+  nextPort = nextPort >= CDP_PORT_CEILING ? CDP_PORT_BASE : nextPort + 1;
+  return port;
 }
 
 const PRIVATE_HOST_PATTERNS = [

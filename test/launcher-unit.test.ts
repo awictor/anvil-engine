@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { validateProxyUrl, findChromePath, killBrowser } from "../src/launcher.js";
+import { validateProxyUrl, findChromePath, killBrowser, getNextCdpPort } from "../src/launcher.js";
 
 const savedAllow = process.env.ANVIL_ALLOW_PRIVATE_PROXY;
 const savedChrome = process.env.CHROME_PATH;
@@ -96,5 +96,33 @@ describe("killBrowser", () => {
     const result = killBrowser(fake as never);
     expect(result).toBeInstanceOf(Promise);
     await expect(result).resolves.toBeUndefined();
+  });
+});
+
+describe("getNextCdpPort", () => {
+  it("returns sequential ports for normal in-range calls", () => {
+    const p1 = getNextCdpPort();
+    const p2 = getNextCdpPort();
+    expect(p2).toBe(p1 + 1);
+  });
+
+  it("stays within the valid TCP range and wraps instead of climbing past the ceiling", () => {
+    // Call past the full base..ceiling span (~56k) so the allocator must wrap.
+    // Keep the hot loop assertion-free; check aggregates after.
+    let min = Infinity;
+    let max = -Infinity;
+    let sawBase = false;
+    let allIntegers = true;
+    for (let i = 0; i < 130_000; i++) {
+      const port = getNextCdpPort();
+      if (!Number.isInteger(port)) allIntegers = false;
+      if (port < min) min = port;
+      if (port > max) max = port;
+      if (port === 9222) sawBase = true;
+    }
+    expect(allIntegers).toBe(true);
+    expect(min).toBe(9222);          // never below base
+    expect(max).toBeLessThanOrEqual(65000); // never an invalid TCP port
+    expect(sawBase).toBe(true);      // wrapped back to base within the run
   });
 });
