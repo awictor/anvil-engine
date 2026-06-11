@@ -353,3 +353,48 @@ describe.skipIf(!chromeAvailable())("e2e: browser contexts (SessionActions)", ()
     await app.sessionManager.destroy(session.id);
   }, 60000);
 });
+
+describe.skipIf(!chromeAvailable())("e2e: crash recovery (relaunch)", () => {
+  let app: App;
+
+  beforeAll(async () => {
+    app = buildApp(loadConfig({ ...process.env, ANVIL_API_KEY: "", ANVIL_RATE_LIMIT_RPM: "" }));
+    await new Promise<void>((resolve) => app.server.listen(0, "127.0.0.1", resolve));
+  });
+
+  afterAll(async () => {
+    await app.stop();
+  }, 30000);
+
+  it("relaunches after a hard Chrome kill: request succeeds, old download dir reclaimed", async () => {
+    const session = await app.sessionManager.create({ headless: true });
+    // Prime the cached puppeteer connection so the crash is detected on it.
+    await app.actions.evaluate(session, "1 + 1");
+
+    const oldProc = session.browserProcess;
+    const oldDownloadDir = oldProc.downloadDir!;
+    expect(existsSync(oldDownloadDir)).toBe(true);
+
+    // Hard-kill Chrome out from under the engine (simulated crash) and wait
+    // for the process to actually exit before issuing the next request.
+    const exited = new Promise<void>((resolve) => oldProc.process.once("exit", () => resolve()));
+    oldProc.process.kill("SIGKILL");
+    await exited;
+
+    // The next operation must detect the crash, relaunch, and still succeed.
+    const result = await app.actions.evaluate(session, "'recovered'");
+    expect(result).toBe("recovered");
+
+    // A fresh browser process is in place...
+    expect(session.browserProcess).not.toBe(oldProc);
+    const freshDir = session.browserProcess.downloadDir!;
+    expect(freshDir).not.toBe(oldDownloadDir);
+    expect(existsSync(freshDir)).toBe(true);
+    // ...and the crashed browser's download dir was reclaimed (no orphan).
+    expect(existsSync(oldDownloadDir)).toBe(false);
+
+    // Destroy must clean the fresh dir too — nothing left behind either way.
+    await app.sessionManager.destroy(session.id);
+    expect(existsSync(freshDir)).toBe(false);
+  }, 60000);
+});
