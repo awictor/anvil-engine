@@ -6,10 +6,11 @@ exposed through a REST API, a WebSocket CDP proxy, a TypeScript SDK, and an MCP
 server. Zero third-party browser-infrastructure dependencies — it runs Chrome
 itself, so there is no external service, API key, or vendor in the path.
 
-- **33 REST endpoints** for sessions, navigation, scraping, PDF, screenshots,
-  page actions, cookies, multi-tab control, HAR capture, request interception,
+- **38 REST endpoints** for sessions, navigation, scraping, PDF, screenshots,
+  live view (single frame + MJPEG stream), page actions, cookies, multi-tab
+  control, isolated browser contexts, HAR capture, request interception,
   action recording, and downloads.
-- **MCP server** (10 tools) so Claude Code / agents can drive browsers directly — see [docs/MCP.md](docs/MCP.md).
+- **MCP server** (13 tools) so Claude Code / agents can drive browsers directly — see [docs/MCP.md](docs/MCP.md).
 - **Typed SDK** (`AnvilClient`) covering every endpoint.
 - **Operational**: structured JSON logs, per-endpoint latency metrics, liveness/
   readiness probes, rate limiting, API-key auth, session timeouts, optional
@@ -102,18 +103,23 @@ await anvil.releaseSession(id);
 
 ## API overview
 
-The full, authoritative list lives at `GET /v1/docs` (33 endpoints). Summary:
+The full, authoritative list lives at `GET /v1/docs` (38 endpoints). Summary:
 
 | Area | Endpoints |
 |---|---|
 | Sessions | `POST/GET /v1/sessions`, `GET /v1/sessions/:id`, `GET /v1/sessions/list`, `POST /v1/sessions/:id/release` |
 | Actions | `/v1/actions/{navigate,click,type,select,hover,wait,evaluate,upload}` |
-| Content | `POST /v1/scrape`, `POST /v1/pdf`, `GET /v1/screenshot`, `GET/POST /v1/cookies` |
+| Content | `POST /v1/scrape`, `POST /v1/pdf`, `GET /v1/screenshot`, `GET /v1/view`, `GET /v1/view/stream`, `GET/POST /v1/cookies` |
 | Pages/tabs | `GET/POST /v1/pages`, `DELETE /v1/pages/:index` |
+| Contexts | `GET/POST /v1/contexts`, `DELETE /v1/contexts/:id` |
 | Network | `POST /v1/har/start`, `POST /v1/har/stop`, `GET /v1/har`, `POST /v1/intercept` |
 | Recording | `POST /v1/recording/start`, `POST /v1/recording/stop`, `GET /v1/recording` |
 | Files | `GET /v1/downloads`, `GET /v1/downloads/:filename` |
 | Observability | `GET /v1/health`, `GET /v1/metrics`, `GET /v1/docs` |
+
+`GET /v1/view` returns a single JPEG frame of the session viewport;
+`GET /v1/view/stream` is an MJPEG stream (`?fps=` 1–10, default 2, `?quality=`
+1–100) you can point an `<img src>` at to watch a session live.
 
 Operational probes `GET /v1/live` and `GET /v1/ready` exist for orchestrators and
 are intentionally not part of the documented endpoint catalog.

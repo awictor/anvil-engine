@@ -1,9 +1,18 @@
 # Session State — Anvil Engine
 
 ## Current Version
-v1.0.0 | 37 endpoints | 500 tests (+16 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated)
+v1.0.0 | 38 endpoints | 503 tests (+18 gated E2E with real Chrome) | MCP server (stdio, 13 tools, documented) | session persistence (opt-in) | browser contexts (isolated) | live view (frame + MJPEG stream)
 
 ## Last Completed
+- MJPEG streaming COMPLETE: GET /v1/view/stream — multipart/x-mixed-replace
+  JPEG stream, fps clamped 1–10 (default 2), per-frame refcount (destroy drains
+  between frames), backpressure-aware writes, touch per frame. Contract 37→38
+  with full consistency updates + AnvilClient.viewStreamUrl. 4 integration +
+  1 E2E (multiple parts + termination after release). 503 default, 17 E2E.
+- Crash-relaunch E2E COMPLETE: SIGKILL Chrome mid-life → evaluate succeeds via
+  relaunch; old download dir reclaimed (validates the relaunch fix end to end);
+  destroy cleans the fresh dir. 18 E2E. Disk was unblocked (8.4G free).
+- README refreshed: 38 endpoints, 13 MCP tools, view/stream + contexts rows.
 - Fixed unbounded CDP port counter: getNextCdpPort climbed past 65535 over a long
   engine lifetime (~56k sessions) → invalid TCP ports. Now bounded 9222–65000 with
   wraparound. 2 tests (500 total). Non-E2E.
@@ -86,16 +95,12 @@ v1.0.0 | 37 endpoints | 500 tests (+16 gated E2E with real Chrome) | MCP server 
 ## Known Issues
 - CRLF git warnings on commit are cosmetic (LF→CRLF on Windows checkout); ignore.
 - E2E suite spawns real Chrome — run only via `vitest.e2e.config.ts`, not the default suite.
-- DISK PRESSURE (worsening): host Temp is at ~100%, only ~2G free after cleanup, and each E2E run nets it lower (Chrome profiles + the engine's per-session download dirs aren't all reclaimed even with taskkill + temp clear). One ENOSPC already truncated CHANGELOG.md mid-write (recovered via git checkout). MITIGATION until addressed: prefer non-E2E iterations; when E2E is required, run it, then `taskkill //F //IM chrome.exe` + `rm -rf %TEMP%/HeadlessChrome*/ %TEMP%/anvil-*`. ROOT CAUSE likely also unrelated host data (233G used). Consider: a cleanup step in the harness, or pausing the loop until the host is cleared.
+- DISK PRESSURE (improved 2026-06-11): host now has ~8.4G free; both disk-blocked backlog items completed. Still run `taskkill //F //IM chrome.exe` + `rm -rf %TEMP%/HeadlessChrome*/ %TEMP%/anvil-*` after every E2E run — leftover Chrome trees re-accumulate fast on a 97%-full disk.
 
 ## Backlog (Priority Order)
 Each item is done when ALL success criteria pass. One item per iteration.
 
-1. **Live session view: MJPEG streaming** — upgrade /v1/view (or add /v1/view/stream) to a multipart/x-mixed-replace JPEG stream. CAUTION: holds a connection open — must respect session timeout + in-flight refcount, and bound frame rate. Design the lifecycle before coding. Contract-changing if a new endpoint. NOTE: E2E-heavy; check disk headroom first (Known Issue).
-
-2. **Crash-relaunch E2E (deferred — needs disk headroom)** — gated E2E that kills a session's Chrome pid mid-life, makes a request to trigger relaunch, and asserts (a) the request succeeds and (b) no orphaned anvil-downloads-* dir remains. Validates the relaunch download-dir fix end to end. Only run when Temp has >5G free.
-
-3. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
+1. **Ongoing hardening (standing item — never remove)** — When no higher item is actionable, do ONE unit: add an edge-case or security test, tighten one input validation, improve one error message, or close one small rough edge. Keep growing test coverage of launcher.ts, cdp-proxy.ts, and the SessionActions crash-recovery path.
 
 ## Decisions (closed items)
 - **Preserve session ids across restore: WON'T-DO** (2026-06-10). Restored sessions

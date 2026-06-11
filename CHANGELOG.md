@@ -4,6 +4,26 @@ All notable changes to the Anvil Engine are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Live session view: MJPEG streaming — `GET /v1/view/stream`** — a
+  `multipart/x-mixed-replace` JPEG stream of the session viewport with a
+  bounded frame rate (`?fps=` clamped 1–10, default 2) and validated
+  `?quality=`. Each frame is an independent `captureFrame` call, so the
+  in-flight refcount is held per frame and never across the stream — session
+  destroy drains between frames and the next capture ends the stream cleanly.
+  Writes are backpressure-aware and stop when the client disconnects; each
+  delivered frame touches the session so a watched session never idles out.
+  **Contract change: 37 → 38 endpoints** — `/v1/docs` count + content category,
+  both docs-count assertions, the `integration.test.ts` catalog, and an
+  `AnvilClient.viewStreamUrl()` helper all updated together. 4 integration
+  tests + 1 normalizeRoute pin + 1 gated E2E proving multiple MJPEG parts and
+  stream termination after release (503 default, 17 E2E).
+- **Crash-relaunch E2E** — a gated test SIGKILLs a session's Chrome mid-life,
+  then issues an evaluate: the `run()` wrapper detects the crash, relaunches,
+  and returns the result. Asserts the crashed browser's download dir was
+  reclaimed (validating the relaunch download-dir fix end to end) and that
+  destroy cleans the fresh dir too. 18 E2E total.
+
 ### Fixed
 - **Unbounded CDP port counter** — `getNextCdpPort` did `nextPort++` without a
   ceiling, so a long-running engine (~56k sessions over its lifetime) would
