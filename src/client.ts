@@ -101,6 +101,16 @@ export class AnvilClient {
     return this.request<ArrayBuffer>("GET", `/v1/view${query}`, undefined, options?.sessionId);
   }
 
+  /** Returns the URL of the MJPEG live stream — point an <img src> or media client at it. */
+  viewStreamUrl(options?: { fps?: number; quality?: number; sessionId?: string }): string {
+    const params = new URLSearchParams();
+    if (options?.fps !== undefined) params.set("fps", String(options.fps));
+    if (options?.quality !== undefined) params.set("quality", String(options.quality));
+    if (options?.sessionId) params.set("sessionId", options.sessionId);
+    const qs = params.toString();
+    return `${this.baseUrl}/v1/view/stream${qs ? `?${qs}` : ""}`;
+  }
+
   // Page actions
   async click(selector: string, options?: { button?: string; clickCount?: number; sessionId?: string }) {
     return this.request<{ success: boolean; selector: string }>(

@@ -63,13 +63,13 @@ describe("integration: open server (no auth, no rate limit)", () => {
     expect(body).toHaveProperty("endpoints");
   });
 
-  it("GET /v1/docs reports version 1.0.0 and 37 endpoints", async () => {
+  it("GET /v1/docs reports version 1.0.0 and 38 endpoints", async () => {
     const res = await fetch(`${base}/v1/docs`);
     const body = await res.json();
     expect(body.version).toBe("1.0.0");
-    expect(body.endpoints).toBe(37);
+    expect(body.endpoints).toBe(38);
     const listed = Object.values(body.categories).flat() as unknown[];
-    expect(listed).toHaveLength(37);
+    expect(listed).toHaveLength(38);
   });
 
   it("unknown route returns 404 Not found", async () => {
@@ -210,6 +210,28 @@ describe("integration: open server (no auth, no rate limit)", () => {
     const res = await fetch(`${base}/v1/view?quality=abc&sessionId=ghost`);
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "quality must be a number" });
+  });
+
+  it("GET /v1/view/stream with no active session returns 400 No active session", async () => {
+    const res = await fetch(`${base}/v1/view/stream`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No active session" });
+  });
+
+  it("GET /v1/view/stream rejects non-numeric fps and quality before resolving a session", async () => {
+    const badFps = await fetch(`${base}/v1/view/stream?fps=abc&sessionId=ghost`);
+    expect(badFps.status).toBe(400);
+    expect(await badFps.json()).toEqual({ error: "fps must be a number" });
+
+    const badQuality = await fetch(`${base}/v1/view/stream?quality=abc&sessionId=ghost`);
+    expect(badQuality.status).toBe(400);
+    expect(await badQuality.json()).toEqual({ error: "quality must be a number" });
+  });
+
+  it("GET /v1/view/stream with unknown explicit session returns 404", async () => {
+    const res = await fetch(`${base}/v1/view/stream?sessionId=ghost`);
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Session not found" });
   });
 
   it("X-Session-Id header targets sessions the same as query param", async () => {

@@ -200,6 +200,47 @@ describe.skipIf(!chromeAvailable())("e2e: multi-page / tabs (SessionActions)", (
     await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
   }, 60000);
 
+  it("GET /v1/view/stream emits multiple MJPEG parts, then ends after release", async () => {
+    const created = await (await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ headless: true }),
+    })).json();
+    const sid = created.id;
+
+    const res = await fetch(`${base}/v1/view/stream?sessionId=${sid}&fps=5&quality=30`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("multipart/x-mixed-replace; boundary=frame");
+
+    // Read until we've seen at least 2 boundary-delimited JPEG parts.
+    const reader = res.body!.getReader();
+    let buffer = Buffer.alloc(0);
+    let boundaries = 0;
+    while (boundaries < 2) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer = Buffer.concat([buffer, Buffer.from(value)]);
+      boundaries = buffer.toString("latin1").split("--frame\r\n").length - 1;
+    }
+    expect(boundaries).toBeGreaterThanOrEqual(2);
+    // Each part declares image/jpeg and the first frame body starts with JPEG magic.
+    const text = buffer.toString("latin1");
+    expect(text).toContain("Content-Type: image/jpeg");
+    const firstBody = buffer.indexOf(Buffer.from([0xff, 0xd8, 0xff]));
+    expect(firstBody).toBeGreaterThan(-1);
+
+    // Destroying the session must terminate the stream (reader sees EOF) —
+    // the per-frame refcount means destroy never blocks on the open stream.
+    await fetch(`${base}/v1/sessions/${sid}/release`, { method: "POST" });
+    const deadline = Date.now() + 10000;
+    let ended = false;
+    while (!ended && Date.now() < deadline) {
+      const { done } = await reader.read();
+      ended = done === true;
+    }
+    expect(ended).toBe(true);
+  }, 60000);
+
   it("drives the /v1/pages routes over HTTP", async () => {
     const created = await (await fetch(`${base}/v1/sessions`, {
       method: "POST",

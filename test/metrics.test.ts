@@ -29,6 +29,7 @@ describe("normalizeRoute (histogram cardinality)", () => {
     expect(normalizeRoute("GET", "/v1/pages")).toBe("GET /v1/pages");
     expect(normalizeRoute("GET", "/v1/contexts")).toBe("GET /v1/contexts");
     expect(normalizeRoute("GET", "/v1/view")).toBe("GET /v1/view");
+    expect(normalizeRoute("GET", "/v1/view/stream")).toBe("GET /v1/view/stream");
     expect(normalizeRoute("GET", "/v1/health")).toBe("GET /v1/health");
   });
 });

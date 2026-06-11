@@ -55,7 +55,7 @@ export function healthRoutes(deps: Deps): Route[] {
       handler: ({ res }) => {
         json(res, 200, {
           version: "1.0.0",
-          endpoints: 37,
+          endpoints: 38,
           categories: {
             sessions: [
               { method: "POST", path: "/v1/sessions", description: "Create a new browser session" },
@@ -79,6 +79,7 @@ export function healthRoutes(deps: Deps): Route[] {
               { method: "POST", path: "/v1/pdf", description: "Generate PDF from page" },
               { method: "GET", path: "/v1/screenshot", description: "Capture page screenshot" },
               { method: "GET", path: "/v1/view", description: "Capture a single JPEG frame (live view)" },
+              { method: "GET", path: "/v1/view/stream", description: "MJPEG live view stream (optional ?fps=, ?quality=)" },
               { method: "GET", path: "/v1/cookies", description: "Get all cookies" },
               { method: "POST", path: "/v1/cookies", description: "Set cookies" },
             ],
