@@ -159,4 +159,4 @@ auto-skips when no browser is installed.
 
 ## License
 
-Internal Amazon tool. See repository for details.
+MIT License
