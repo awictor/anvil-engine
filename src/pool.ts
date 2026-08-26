@@ -24,10 +24,18 @@ export class BrowserPool {
     if (this.warm.length > 0) {
       return this.warm.pop()!;
     }
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Browser launch timed out after 30s")), 30000),
-    );
-    return Promise.race([launchBrowser(options), timeout]);
+    // Race the launch against a 30s cap. The timer MUST be cleared on the launch-wins path — an
+    // uncleared setTimeout keeps the Node event loop alive for the full 30s (process/tests hang long
+    // after work is done, and repeated acquires pile up live timers).
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Browser launch timed out after 30s")), 30000);
+    });
+    try {
+      return await Promise.race([launchBrowser(options), timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   release(proc: BrowserProcess): void {
