@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTools, dispatchTool, type McpDeps } from "../src/mcp/tools.js";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Unit tests for the MCP tool layer. A fake SessionManager/SessionActions lets
 // us verify dispatch + schemas without launching Chrome.
@@ -99,6 +104,22 @@ describe("MCP tool registry", () => {
     const { deps } = makeDeps();
     const navigate = createTools(deps).find((t) => t.name === "navigate")!;
     expect(navigate.inputSchema.required).toContain("url");
+  });
+
+  // DEV-0098: README + docs/MCP.md advertise an MCP tool COUNT ("N tools"). A new tool that isn't
+  // reflected in both docs misleads users about the surface. Assert the real count == each doc's claim.
+  it("the advertised MCP tool count in README + docs/MCP.md matches createTools()", () => {
+    const { deps } = makeDeps();
+    const actual = createTools(deps).length;
+    const claim = (text: string, where: string): number => {
+      const m = text.match(/(\d+)\s+tools/i);
+      expect(m, `no "N tools" claim found in ${where}`).not.toBeNull();
+      return Number(m![1]);
+    };
+    const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+    const mcpDoc = readFileSync(join(ROOT, "docs", "MCP.md"), "utf8");
+    expect(claim(readme, "README.md"), "README tool count").toBe(actual);
+    expect(claim(mcpDoc, "docs/MCP.md"), "docs/MCP.md tool count").toBe(actual);
   });
 });
 
