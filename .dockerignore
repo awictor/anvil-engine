@@ -2,8 +2,10 @@ node_modules
 src
 test
 .git
+.github
 .claude
-dist
 *.md
 vitest.config.ts
 tsconfig.json
+# NOTE: do NOT ignore dist/ — the Dockerfile COPYs the pre-built dist/ into the image
+# (build runs `npm run build` first). Ignoring it made `COPY dist/ ./dist/` copy nothing.
