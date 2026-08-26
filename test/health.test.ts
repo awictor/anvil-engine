@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Writable } from "node:stream";
 import { healthRoutes } from "../src/routes/health.js";
+import { counters, recordRequest, resetForTests } from "../src/metrics.js";
 
 // DEV-0049: healthRoutes has real branch logic that no UNIT test exercised — /v1/ready flips
 // 200<->503 on pool/session state, and /v1/docs hardcodes `endpoints: 38` next to a catalog that
@@ -105,5 +106,29 @@ describe("healthRoutes handlers (DEV-0049)", () => {
     const summed = Object.values(cats).reduce((n, arr) => n + arr.length, 0);
     // If someone adds/removes a catalog entry without touching the hardcoded count, this fails.
     expect(r.json.endpoints).toBe(summed);
+  });
+});
+
+describe("GET /v1/metrics handler (DEV-0050)", () => {
+  it("returns 200 merging legacy counters + live activeSessions + an endpoints snapshot", () => {
+    resetForTests();
+    // Drive a real request through the recorder so the snapshot + counters are non-trivial.
+    recordRequest("GET", "/v1/health", 200, 5);
+    recordRequest("POST", "/v1/scrape", 500, 12);
+    const r = mkRes();
+    route(fakeDeps({ size: 4 }), "/v1/metrics").handler(ctx(r));
+    expect(r.status).toBe(200);
+    // activeSessions reflects sessionManager.size (NOT the counters snapshot).
+    expect(r.json.activeSessions).toBe(4);
+    // legacy counter keys are spread onto the body verbatim.
+    expect(r.json.requestsServed).toBe(counters.requestsServed);
+    expect(r.json.errorsCount).toBe(counters.errorsCount);
+    expect(r.json.errorsCount).toBeGreaterThanOrEqual(1); // the 500 above
+    expect(typeof r.json.uptime).toBe("number");
+    // endpoints is the per-route snapshot object, keyed by normalized route.
+    expect(r.json.endpoints).toBeTypeOf("object");
+    expect(r.json.endpoints).not.toBeNull();
+    expect(Object.keys(r.json.endpoints).length).toBeGreaterThan(0);
+    resetForTests();
   });
 });
