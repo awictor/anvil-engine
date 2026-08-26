@@ -3,7 +3,8 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { contentTypeFor } from "../src/routes/downloads.js";
+import { contentTypeFor, downloadRoutes } from "../src/routes/downloads.js";
+import { Writable } from "node:stream";
 
 describe("contentTypeFor (DEV-0047)", () => {
   it("maps common extensions to their mime type (case-insensitive)", () => {
@@ -187,5 +188,111 @@ describe("anvil-engine file download endpoints", () => {
       const flag = `--download-default-directory=${dir}`;
       expect(flag).toBe("--download-default-directory=/tmp/anvil-downloads-abc123");
     });
+  });
+});
+
+// DEV-0048: exercise the ACTUAL downloadRoutes handlers (the blocks above assert literals,
+// they never invoke the route). Drives /v1/downloads/*filename with a mock req/res + a fake
+// session whose browserProcess.downloadDir is a real temp dir, asserting the route-level
+// branches: traversal -> 400, missing -> 404, no downloadDir -> 404, real file -> 200 with
+// Content-Disposition attachment + the DEV-0047 content-type + Content-Length.
+describe("downloadRoutes handlers (DEV-0048 route layer)", () => {
+  // Minimal ServerResponse stand-in: a Writable that records writeHead + collects the body,
+  // and resolves `done` on finish so we can await createReadStream(...).pipe(res).
+  function mkRes() {
+    let statusCode = 0;
+    let headers: Record<string, string> = {};
+    const chunks: Buffer[] = [];
+    let resolveDone: () => void;
+    const done = new Promise<void>((r) => (resolveDone = r));
+    const res = new Writable({
+      write(chunk, _enc, cb) {
+        chunks.push(Buffer.from(chunk));
+        cb();
+      },
+    });
+    (res as any).headersSent = false;
+    (res as any).writeHead = (code: number, h?: Record<string, string>) => {
+      statusCode = code;
+      if (h) headers = h;
+      (res as any).headersSent = true;
+      return res;
+    };
+    res.on("finish", () => resolveDone());
+    return {
+      res: res as any,
+      done,
+      get status() { return statusCode; },
+      get headers() { return headers; },
+      get body() { return Buffer.concat(chunks).toString(); },
+    };
+  }
+
+  function fakeDeps(downloadDir: string | undefined) {
+    const session = { browserProcess: { downloadDir } };
+    return { sessionManager: { getActive: () => session, get: () => session } } as any;
+  }
+
+  function getRoute(deps: any) {
+    return downloadRoutes(deps).find(
+      (r: any) => r.pattern === "/v1/downloads/*filename",
+    )!;
+  }
+
+  const req = { headers: {} } as any;
+  const mkUrl = () => new URL("http://x/v1/downloads/x");
+
+  let dir: string;
+  beforeEach(() => {
+    dir = join(tmpdir(), `anvil-dl-route-${randomUUID()}`);
+    mkdirSync(dir, { recursive: true });
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("rejects a traversal filename with 400 Invalid filename", async () => {
+    const route = getRoute(fakeDeps(dir));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "../../etc/passwd" }, requestId: "t" });
+    expect(r.status).toBe(400);
+    expect(JSON.parse(r.body).error).toBe("Invalid filename");
+  });
+
+  it("returns 404 when the file does not exist", async () => {
+    const route = getRoute(fakeDeps(dir));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "nope.pdf" }, requestId: "t" });
+    expect(r.status).toBe(404);
+    expect(JSON.parse(r.body).error).toBe("File not found");
+  });
+
+  it("returns 404 when the session has no downloadDir", async () => {
+    const route = getRoute(fakeDeps(undefined));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "x.pdf" }, requestId: "t" });
+    expect(r.status).toBe(404);
+    expect(JSON.parse(r.body).error).toBe("No download directory");
+  });
+
+  it("serves a real file: 200 + attachment + DEV-0047 content-type + Content-Length", async () => {
+    writeFileSync(join(dir, "report.pdf"), Buffer.alloc(2048));
+    const route = getRoute(fakeDeps(dir));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "report.pdf" }, requestId: "t" });
+    await r.done;
+    expect(r.status).toBe(200);
+    expect(r.headers["Content-Disposition"]).toBe('attachment; filename="report.pdf"');
+    expect(r.headers["Content-Type"]).toBe("application/pdf"); // DEV-0047 wiring, not octet-stream
+    expect(r.headers["Content-Length"]).toBe("2048");
+    expect(r.body.length).toBe(2048);
+  });
+
+  it("unknown extension falls back to octet-stream on a real file", async () => {
+    writeFileSync(join(dir, "blob.weirdext"), Buffer.alloc(10));
+    const route = getRoute(fakeDeps(dir));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "blob.weirdext" }, requestId: "t" });
+    await r.done;
+    expect(r.status).toBe(200);
+    expect(r.headers["Content-Type"]).toBe("application/octet-stream");
   });
 });
