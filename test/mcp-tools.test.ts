@@ -121,6 +121,45 @@ describe("MCP tool registry", () => {
     expect(claim(readme, "README.md"), "README tool count").toBe(actual);
     expect(claim(mcpDoc, "docs/MCP.md"), "docs/MCP.md tool count").toBe(actual);
   });
+
+  // DEV-0100: docs/MCP.md also carries a full tool TABLE (name + required args). The count guard above
+  // misses a RENAME or a required-arg drift. Parse the `| `tool` | required | ... |` rows and assert
+  // (a) the documented name-set == createTools() names, and (b) each row's required arg (backtick
+  // tokens, ignoring the `—` placeholder) is in that tool's inputSchema.required.
+  it("docs/MCP.md tool table matches createTools() names + required args", () => {
+    const { deps } = makeDeps();
+    const tools = createTools(deps);
+    const byName = new Map(tools.map((t) => [t.name, t]));
+    const fullDoc = readFileSync(join(ROOT, "docs", "MCP.md"), "utf8");
+    // Scope to the tool table only — the env-var table has the same `| `NAME` | ... |` row shape, so
+    // slice from the "| Tool | Required args |" header to the next blank line before parsing rows.
+    const tableStart = fullDoc.indexOf("| Tool | Required args |");
+    expect(tableStart, "tool table header present in docs/MCP.md").toBeGreaterThan(-1);
+    const rest = fullDoc.slice(tableStart);
+    const mcpDoc = rest.slice(0, rest.indexOf("\n\n"));
+
+    // A tool row: | `name` | <required cell> | <optional> | <returns> |. The header/separator rows
+    // (`| Tool |`, `|---|`) have no backticked first cell, so they don't match.
+    const rowRe = /^\|\s*`(\w+)`\s*\|([^|]*)\|/gm;
+    const documented: { name: string; required: string[] }[] = [];
+    for (let m = rowRe.exec(mcpDoc); m; m = rowRe.exec(mcpDoc)) {
+      const required = (m[2].match(/`(\w+)`/g) ?? []).map((s) => s.replace(/`/g, ""));
+      documented.push({ name: m[1], required });
+    }
+
+    // (a) exact name-set parity (catches a rename / added / removed tool).
+    const docNames = documented.map((d) => d.name).sort();
+    expect(docNames, "documented tool names vs createTools()").toEqual([...byName.keys()].sort());
+
+    // (b) every documented required arg is actually required by the tool's schema.
+    for (const { name, required } of documented) {
+      const tool = byName.get(name)!;
+      const schemaRequired = (tool.inputSchema.required ?? []) as string[];
+      for (const arg of required) {
+        expect(schemaRequired, `${name}: doc says "${arg}" required`).toContain(arg);
+      }
+    }
+  });
 });
 
 describe("dispatchTool", () => {
