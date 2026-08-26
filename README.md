@@ -120,6 +120,9 @@ The full, authoritative list lives at `GET /v1/docs` (38 endpoints). Summary:
 `GET /v1/view` returns a single JPEG frame of the session viewport;
 `GET /v1/view/stream` is an MJPEG stream (`?fps=` 1–10, default 2, `?quality=`
 1–100) you can point an `<img src>` at to watch a session live.
+The view surface is **read-only** (GET-only) — it renders frames but does not accept
+click/type injection (unlike a Browserbase-style interactive debugger). Drive
+interaction through the action endpoints (`/v1/actions/*`); use `/v1/view` to watch.
 
 Operational probes `GET /v1/live` and `GET /v1/ready` exist for orchestrators and
 are intentionally not part of the documented endpoint catalog.
