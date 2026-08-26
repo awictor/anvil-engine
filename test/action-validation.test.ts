@@ -61,4 +61,27 @@ describe("action route validation (DEV-0115) — real handlers, no browser", () 
     expect(r.status).toBe(400);
     expect(r.json.error).toMatch(/selector must be a non-empty string/);
   });
+
+  // DEV-0116: click + type validation was only "tested" by page-actions.test's literal theater
+  // (imported no src). Drive the real handlers here.
+  it("POST /v1/actions/click rejects a missing selector with 400", async () => {
+    const r = mkRes();
+    await route("/v1/actions/click").handler(ctx(mkReq({ button: "left" }), r));
+    expect(r.status).toBe(400);
+    expect(r.json.error).toMatch(/selector must be a non-empty string/);
+  });
+
+  it("POST /v1/actions/type rejects a missing selector with 400", async () => {
+    const r = mkRes();
+    await route("/v1/actions/type").handler(ctx(mkReq({ text: "hi" }), r));
+    expect(r.status).toBe(400);
+    expect(r.json.error).toMatch(/selector must be a non-empty string/);
+  });
+
+  it("POST /v1/actions/type rejects a missing text with 400 (selector present)", async () => {
+    const r = mkRes();
+    await route("/v1/actions/type").handler(ctx(mkReq({ selector: "#in" }), r));
+    expect(r.status).toBe(400);
+    expect(r.json.error).toMatch(/text must be a non-empty string/);
+  });
 });
