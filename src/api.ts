@@ -1,6 +1,7 @@
 import { loadConfig, ConfigError } from "./config.js";
 import { createLogger } from "./logger.js";
 import { buildApp } from "./app.js";
+import { installProcessHandlers } from "./process-handlers.js";
 
 const logger = createLogger("api");
 
@@ -17,19 +18,10 @@ try {
 
 const app = buildApp(config);
 
-async function shutdown(signal: string) {
-  logger.info(`${signal} — stopping server`, { sessions: app.sessionManager.size });
-  await app.stop();
-  process.exit(0);
-}
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("uncaughtException", (err) => {
-  logger.error("Uncaught exception", { error: err.message });
-});
-process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled rejection", { reason: String(reason) });
-});
+// SIGINT/SIGTERM -> graceful stop + exit 0; uncaughtException/unhandledRejection -> log + best-effort
+// stop() (releases the pool, kills leaked Chrome) + exit 1. Previously the fatal handlers only logged,
+// so a broken process kept running with orphaned browsers (DEV-0068).
+installProcessHandlers({ logger, stop: () => app.stop() });
 
 (async () => {
   await app.start();
