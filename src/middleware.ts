@@ -61,7 +61,12 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // outage to the caller's retry/alerting (DEV-0119). Match the type + the parse message shape.
   const isBadJson = err instanceof SyntaxError
     || /JSON|Unexpected token|Unexpected end of (JSON|input)/i.test(message);
+  // A Blocked protocol/URL is an SSRF-style client rejection (400), not a server error. Most routes
+  // pre-guard inline and return 400, but the contexts navigate path lets actions.* throw it — map it
+  // here so it's a 400 everywhere (DEV-0120).
+  const isBlocked = /^Blocked (protocol|URL)/i.test(message);
   const status = isBadJson ? 400
+    : isBlocked ? 400
     : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;

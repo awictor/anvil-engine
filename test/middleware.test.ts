@@ -102,4 +102,13 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     // message-shape fallback (in case a parser throws a plain Error, not a SyntaxError instance)
     expect(errorToResponse(new Error("Unexpected token < in JSON at position 0")).status).toBe(400);
   });
+
+  // DEV-0120: a Blocked protocol/URL throw (e.g. actions.navigateInContext, reached via
+  // /v1/contexts/:id which has no inline pre-guard) is a client 400, not a 500.
+  it("maps a Blocked protocol/URL throw -> 400 (not 500)", () => {
+    expect(errorToResponse(new Error("Blocked protocol: only http/https allowed")).status).toBe(400);
+    expect(errorToResponse(new Error("Blocked URL: private IP")).status).toBe(400);
+    // message passthrough preserved for these (not the JSON placeholder)
+    expect(errorToResponse(new Error("Blocked protocol: only http/https allowed")).body.error).toMatch(/Blocked protocol/);
+  });
 });
