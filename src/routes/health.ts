@@ -14,6 +14,12 @@ export function healthRoutes(deps: Deps): Route[] {
         json(res, 200, {
           status: "ok",
           sessions: sessionManager.size,
+          // Capacity (m17 anvil-ops-2): activeSessions alone doesn't tell an operator how close to
+          // exhaustion we are — new sessions get rejected once maxSessions is hit. Expose the
+          // ceiling + warm-pool depth so `relay status` / any operator can gauge headroom.
+          maxSessions: config.maxSessions,
+          poolSize: config.poolSize,
+          poolAvailable: pool ? pool.available : 0,
           uptime: process.uptime(),
           sessionTimeoutMs: config.sessionTimeoutMs,
           multiSession: true,
@@ -46,7 +52,17 @@ export function healthRoutes(deps: Deps): Route[] {
       method: "GET",
       pattern: "/v1/metrics",
       handler: ({ res }) => {
-        json(res, 200, { ...metrics, activeSessions: sessionManager.size, uptime: process.uptime(), endpoints: snapshot() });
+        json(res, 200, {
+          ...metrics,
+          activeSessions: sessionManager.size,
+          // Capacity ceiling + warm-pool depth (m17 anvil-ops-2) so a scrape/monitor can alert on
+          // session exhaustion, not just count what's active.
+          maxSessions: config.maxSessions,
+          poolSize: config.poolSize,
+          poolAvailable: pool ? pool.available : 0,
+          uptime: process.uptime(),
+          endpoints: snapshot(),
+        });
       },
     },
     {

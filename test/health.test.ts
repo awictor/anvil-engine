@@ -40,7 +40,7 @@ function fakeDeps(opts: { size?: number; pool?: { available: number } | null }) 
   return {
     sessionManager: { size: opts.size ?? 0 },
     pool: opts.pool === undefined ? null : opts.pool,
-    config: { sessionTimeoutMs: 300000 },
+    config: { sessionTimeoutMs: 300000, maxSessions: 10, poolSize: 2 },
   } as any;
 }
 
@@ -89,6 +89,17 @@ describe("healthRoutes handlers (DEV-0049)", () => {
     expect(r.json.sessions).toBe(3);
     expect(r.json.sessionTimeoutMs).toBe(300000);
     expect(r.json.multiSession).toBe(true);
+    // capacity fields (m17 anvil-ops-2)
+    expect(r.json.maxSessions).toBe(10);
+    expect(r.json.poolSize).toBe(2);
+    expect(r.json.poolAvailable).toBe(0); // no pool in this fake -> 0, not undefined/crash
+  });
+
+  it("GET /v1/health -> poolAvailable reflects a configured pool", () => {
+    const r = mkRes();
+    route(fakeDeps({ size: 1, pool: { available: 2 } }), "/v1/health").handler(ctx(r));
+    expect(r.json.poolAvailable).toBe(2);
+    expect(r.json.maxSessions).toBe(10);
   });
 
   it("GET /v1/live -> 200 alive", () => {
@@ -125,6 +136,10 @@ describe("GET /v1/metrics handler (DEV-0050)", () => {
     expect(r.json.errorsCount).toBe(counters.errorsCount);
     expect(r.json.errorsCount).toBeGreaterThanOrEqual(1); // the 500 above
     expect(typeof r.json.uptime).toBe("number");
+    // capacity fields (m17 anvil-ops-2): ceiling + pool depth for exhaustion monitoring.
+    expect(r.json.maxSessions).toBe(10);
+    expect(r.json.poolSize).toBe(2);
+    expect(r.json.poolAvailable).toBe(0);
     // endpoints is the per-route snapshot object, keyed by normalized route.
     expect(r.json.endpoints).toBeTypeOf("object");
     expect(r.json.endpoints).not.toBeNull();
