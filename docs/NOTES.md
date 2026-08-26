@@ -35,6 +35,22 @@ networkRoutes(stub).map(rt => `${rt.method} ${rt.pattern}`);  // assert exact se
 So routing-shape is saturated: future anvil work should be behavior/feature/bugfix, not
 more shape tests.
 
+## Unit gate vs e2e (what the CI gate does NOT cover)
+
+Two test tiers, two configs:
+- **Unit gate** — `npm test` (`vitest run`, `vitest.config.ts`) excludes `test/e2e/**`. It's the
+  green-on-every-fire gate: route handlers via mock req/res, pure validation/config/util, contract
+  shape. It NEVER launches a browser, so it does **not** prove any real-Chrome behavior.
+- **e2e** — `npm run test:e2e` (`vitest.e2e.config.ts`, DEV-0086). The ONLY proof of real-browser
+  guarantees: a session launches Chrome, `evaluate` returns real values, an `evaluate` timeout fires
+  on `while(true)` and the session survives, `screenshot` returns real PNG bytes, HAR start/stop caps
+  entries, concurrent evaluate+release drains cleanly, multi-page/contexts work, and a crash-relaunch
+  keeps the download dir. Suites `describe.skipIf(!chromeAvailable())` — a "0 tests / skipped" result
+  means Chrome wasn't found, NOT that it passed. Needs Chrome (set `CHROME_PATH` if not default).
+
+If you change launcher/session/CDP/evaluate/screenshot/HAR behavior, the unit gate can be green while
+the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-qa.md`).
+
 ## Consumer contract (relay + DataFaucet)
 
 - `/v1/view` + `/v1/view/stream` are **read-only** (GET-only) JPEG/MJPEG — no click
