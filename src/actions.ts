@@ -19,6 +19,30 @@ export interface HarEntry {
   requestHeaders?: Record<string, string>;
   requestBody?: string;
   resourceType?: string;
+  // Response detail (DEV-0006) — lets a consumer (DataFaucet capture) classify an endpoint as JSON
+  // from the capture ALONE, without a second fetch. content-type from the response headers; a bounded
+  // UTF-8 preview of the body (capped by harBodyPreviewBytes) so a large payload can't bloat the HAR.
+  responseContentType?: string;
+  responseBodyPreview?: string;
+}
+
+// PURE (DEV-0006): derive the response classification fields for a HAR entry. Extracted so the
+// content-type pick + body-preview cap are unit-testable without a live browser/HTTPResponse.
+//   - content-type is matched case-insensitively (servers send either casing).
+//   - preview is a UTF-8 slice capped at `capBytes`; 0/absent cap or empty body -> no preview.
+export function harResponseFields(
+  headers: Record<string, string>,
+  buffer: Buffer,
+  capBytes: number,
+): { responseContentType?: string; responseBodyPreview?: string } {
+  let responseContentType: string | undefined;
+  for (const [k, v] of Object.entries(headers || {})) {
+    if (k.toLowerCase() === "content-type") { responseContentType = v; break; }
+  }
+  const responseBodyPreview = capBytes > 0 && buffer.length > 0
+    ? buffer.subarray(0, capBytes).toString("utf8")
+    : undefined;
+  return { responseContentType, responseBodyPreview };
 }
 
 export interface ActionEntry {
@@ -31,6 +55,9 @@ export interface ActionEntry {
 export interface ActionsConfig {
   evaluateTimeoutMs: number;
   harMaxEntries: number;
+  // Max bytes of each response body kept as responseBodyPreview (DEV-0006). Bounded so a big payload
+  // can't bloat the HAR; enough to classify JSON + see the top-level shape. 0 disables the preview.
+  harBodyPreviewBytes?: number;
 }
 
 /**
@@ -50,7 +77,7 @@ export class SessionActions {
 
   constructor(
     private sessionManager: SessionManager,
-    private config: ActionsConfig = { evaluateTimeoutMs: 30000, harMaxEntries: 5000 },
+    private config: ActionsConfig = { evaluateTimeoutMs: 30000, harMaxEntries: 5000, harBodyPreviewBytes: 2048 },
   ) {
     sessionManager.onDestroy = (session) => this.releaseSessionResources(session.id);
   }
@@ -380,6 +407,11 @@ export class SessionActions {
             const req = response.request();
             const timing = response.timing();
             const buffer = await response.buffer().catch(() => Buffer.alloc(0));
+            // Response classification (DEV-0006): content-type + a capped body preview so a consumer
+            // can tell "this is a JSON API endpoint" from the capture without re-fetching.
+            const { responseContentType, responseBodyPreview } = harResponseFields(
+              response.headers(), buffer, this.config.harBodyPreviewBytes ?? 0,
+            );
             entries.push({
               url: req.url(),
               method: req.method(),
@@ -390,6 +422,8 @@ export class SessionActions {
               requestHeaders: req.headers(),
               requestBody: req.postData(),
               resourceType: req.resourceType(),
+              responseContentType,
+              responseBodyPreview,
             });
           } catch {
             // Skip failed entries
