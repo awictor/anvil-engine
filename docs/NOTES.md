@@ -76,3 +76,12 @@ the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-
   one-shot retry on transient anvil/network errors (5xx/timeout/reset), NOT on SSRF/4xx/Blocked.
   Two classifiers, same principle: a wrong bool = wasted retry or a dropped-recoverable failure.
   Both are regex-over-message — pin every phrase + a negative + a non-Error when editing either.
+- **THREE error classifiers exist by design — do NOT unify them (different error domains):**
+  1. `isCrashError` (browser-helper.ts) — puppeteer CONNECTION crashes (Target/Session closed, Protocol
+     error) → relaunch.
+  2. `isTransientNavError` (actions.ts, m12) — page NAVIGATION errors (timeout/net::ERR_/5xx; NOT
+     ERR_ABORTED / invalid-URL / Blocked protocol) → retry `navigate`.
+  3. `isTransientError` (the shared `lib/anvil-client.ts`, m13, canonical in Relay) — HTTP/CONNECT +
+     SSRF taxonomy (NOT Blocked URL/protocol/hostname/IP) → retry the anvil-client fetch.
+  Each guards a distinct call site (connect vs page-nav vs http-fetch); merging them would retry the
+  wrong things. Tested in `browser-helper.test.ts` / `nav-retry.test.ts` / the anvil-client suites.
