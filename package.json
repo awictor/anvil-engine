@@ -21,7 +21,8 @@
     "dev": "tsx src/api.ts",
     "mcp": "tsx src/mcp/server.ts",
     "test": "vitest run",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
