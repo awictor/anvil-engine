@@ -147,6 +147,8 @@ values fail fast with an aggregated error).
 | `ANVIL_PERSIST_PATH` | _(unset, disabled)_ | Persist sessions + cookies to this file on shutdown and restore on startup. **Cookies are stored in plaintext at this path — restrict file permissions or avoid on shared hosts.** |
 | `CHROME_PATH` | auto-detected | Path to the Chrome/Chromium binary |
 | `ANVIL_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `ANVIL_REQUIRE_CDP_AUTH` | `false` | When `true`, the raw CDP proxy rejects any connection without the `ANVIL_API_KEY` token. **Leave off only on a trusted network — the CDP endpoint grants full remote control of the browser.** Set `ANVIL_API_KEY` too, or every CDP connection is rejected. |
+| `ANVIL_ALLOW_PRIVATE_PROXY` | `false` | When `true`, disables the SSRF guard that blocks a session `proxy` pointed at a private/internal host. **Security downgrade — only enable for a proxy you control on an isolated network; otherwise a caller can reach your internal services.** |
 
 ## Testing
 
