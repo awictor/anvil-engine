@@ -1,5 +1,6 @@
 import type { Browser, BrowserContext, Page, HTTPResponse, HTTPRequest, Cookie, CookieParam } from "puppeteer-core";
 import { randomUUID } from "node:crypto";
+import { StringDecoder } from "node:string_decoder";
 import { launchBrowser, killBrowser, removeDownloadDir } from "./launcher.js";
 import { type Session, type SessionManager } from "./session.js";
 import { isCrashError } from "./browser-helper.js";
@@ -30,6 +31,10 @@ export interface HarEntry {
 // content-type pick + body-preview cap are unit-testable without a live browser/HTTPResponse.
 //   - content-type is matched case-insensitively (servers send either casing).
 //   - preview is a UTF-8 slice capped at `capBytes`; 0/absent cap or empty body -> no preview.
+//   - MULTIBYTE-SAFE (DEV-0009): a naive buffer.subarray(0,cap).toString("utf8") can split a multi-byte
+//     char at the cap boundary, emitting a U+FFFD replacement-char tail (mojibake). StringDecoder.end()
+//     drops the incomplete trailing bytes, so the preview is always valid UTF-8 (a few bytes shorter,
+//     never corrupt). Enough to classify + read the top-level shape, which is all the preview is for.
 export function harResponseFields(
   headers: Record<string, string>,
   buffer: Buffer,
@@ -39,9 +44,14 @@ export function harResponseFields(
   for (const [k, v] of Object.entries(headers || {})) {
     if (k.toLowerCase() === "content-type") { responseContentType = v; break; }
   }
-  const responseBodyPreview = capBytes > 0 && buffer.length > 0
-    ? buffer.subarray(0, capBytes).toString("utf8")
-    : undefined;
+  let responseBodyPreview: string | undefined;
+  if (capBytes > 0 && buffer.length > 0) {
+    // .write() emits only the COMPLETE characters and buffers an incomplete trailing char. We do NOT
+    // call .end() — .end() would flush that partial char as a U+FFFD replacement (Node 24), the exact
+    // mojibake we're avoiding. Dropping it keeps the preview valid UTF-8 (a few bytes shorter).
+    const decoder = new StringDecoder("utf8");
+    responseBodyPreview = decoder.write(buffer.subarray(0, capBytes));
+  }
   return { responseContentType, responseBodyPreview };
 }
 

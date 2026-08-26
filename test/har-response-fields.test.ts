@@ -41,4 +41,29 @@ describe("harResponseFields", () => {
     expect(r.responseContentType).toBeUndefined();
     expect(r.responseBodyPreview).toBe("hi");
   });
+
+  // DEV-0009: a multi-byte char straddling the cap boundary must NOT produce a U+FFFD mojibake tail.
+  it("never emits a broken char when the cap lands mid-multibyte (multibyte-safe)", () => {
+    // "aaé" = 4 bytes (é = 2 bytes: C3 A9). Cap at 3 splits the é.
+    const buf = Buffer.from("aaé", "utf8");
+    expect(buf.length).toBe(4);
+    const r = harResponseFields({ "content-type": "text/plain" }, buf, 3);
+    // The naive buffer.subarray(0,3).toString("utf8") gives "aa�"; StringDecoder drops the
+    // incomplete é entirely -> "aa". Either way, NO replacement char.
+    expect(r.responseBodyPreview).toBe("aa");
+    expect(r.responseBodyPreview).not.toContain("�");
+  });
+
+  it("keeps a whole multibyte char that fits within the cap", () => {
+    const buf = Buffer.from("aaé", "utf8"); // 4 bytes
+    const r = harResponseFields({ "content-type": "text/plain" }, buf, 4);
+    expect(r.responseBodyPreview).toBe("aaé");
+  });
+
+  it("a 3-byte char (emoji component / CJK) split at the boundary is dropped cleanly", () => {
+    const buf = Buffer.from("x世", "utf8"); // 世 = 3 bytes; total 4
+    const r = harResponseFields({ "content-type": "text/plain" }, buf, 2); // cap mid-世
+    expect(r.responseBodyPreview).toBe("x");
+    expect(r.responseBodyPreview).not.toContain("�");
+  });
 });
