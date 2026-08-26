@@ -56,8 +56,15 @@ export function authMiddleware(apiKey: string): Middleware {
 /** Maps thrown errors to the response statuses the original handler used. */
 export function errorToResponse(err: unknown): { status: number; body: { error: string } } {
   const message = err instanceof Error ? err.message : String(err);
-  const status = message.includes("too large") ? 413
+  // A malformed JSON request body throws SyntaxError from JSON.parse in the route handlers — that's a
+  // client bad-request (400), not a server error (500). Detect it so a bad body doesn't read as an
+  // outage to the caller's retry/alerting (DEV-0119). Match the type + the parse message shape.
+  const isBadJson = err instanceof SyntaxError
+    || /JSON|Unexpected token|Unexpected end of (JSON|input)/i.test(message);
+  const status = isBadJson ? 400
+    : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;
-  return { status, body: { error: message } };
+  const body = isBadJson ? { error: "Invalid JSON in request body" } : { error: message };
+  return { status, body };
 }

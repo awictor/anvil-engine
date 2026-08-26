@@ -90,4 +90,16 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     expect(e.status).toBe(500);
     expect(e.body.error).toBe("boom");
   });
+
+  // DEV-0119: a malformed JSON body throws SyntaxError from JSON.parse in the handlers — that's a
+  // client 400, not a server 500. A real JSON.parse failure is a SyntaxError; also match the message.
+  it("maps a JSON parse SyntaxError -> 400 (bad request, not 500)", () => {
+    let thrown: unknown;
+    try { JSON.parse("{bad"); } catch (e) { thrown = e; }
+    const r = errorToResponse(thrown);
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/Invalid JSON/i);
+    // message-shape fallback (in case a parser throws a plain Error, not a SyntaxError instance)
+    expect(errorToResponse(new Error("Unexpected token < in JSON at position 0")).status).toBe(400);
+  });
 });
