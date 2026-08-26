@@ -83,6 +83,18 @@ export interface ActionsConfig {
   // Per-session cap on open pages/tabs (m6): protects a shared/free-infra deploy from a runaway task
   // spawning unbounded tabs. Enforced in openPage. 0/absent = unlimited (default is generous).
   maxPagesPerSession?: number;
+  // Extra navigate() retries on a TRANSIENT nav error (timeout/reset/net::ERR_) before failing
+  // (m12). 0/absent = no retry. Default set to 1 by config. Deterministic errors never retry.
+  navRetries?: number;
+}
+
+/** Transient navigation error worth one more try — timeouts, connection resets, Chrome net::
+ * errors, 5xx-ish nav failures. NOT a blocked protocol / bad selector / deterministic 4xx.
+ * Mirrors Relay src/anvil.ts isTransientError so both sides share the retry taxonomy. */
+export function isTransientNavError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/Blocked protocol|Only http|Navigation to invalid URL|ERR_ABORTED/i.test(msg)) return false;
+  return /timeout|timed out|net::ERR_|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket hang up|\b5\d\d\b|Navigation failed|frame was detached/i.test(msg);
 }
 
 /**
@@ -205,10 +217,23 @@ export class SessionActions {
   async navigate(session: Session, params: { url: string; waitUntil?: string; timeout?: number }): Promise<{ url: string; title: string }> {
     return this.run(session, async (page) => {
       await this.authenticated(session, page);
-      await page.goto(params.url, {
-        waitUntil: (params.waitUntil as "networkidle2") || "networkidle2",
-        timeout: Math.min(params.timeout || 30000, 60000),
-      });
+      const opts = { waitUntil: (params.waitUntil as "networkidle2") || "networkidle2", timeout: Math.min(params.timeout || 30000, 60000) };
+      // Retry once (config-bounded) on a transient nav error before failing — a flaky
+      // goto shouldn't sink a scrape. Deterministic errors throw immediately (m12).
+      const retries = Math.max(0, this.config.navRetries ?? 0);
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await page.goto(params.url, opts);
+          break;
+        } catch (err) {
+          if (attempt < retries && isTransientNavError(err)) {
+            logger.warn("navigate transient error, retrying", { sessionId: session.id, attempt: attempt + 1, error: err instanceof Error ? err.message : String(err) });
+            await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+            continue;
+          }
+          throw err;
+        }
+      }
       return { url: page.url(), title: await page.title() };
     });
   }

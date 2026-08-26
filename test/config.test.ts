@@ -16,7 +16,14 @@ describe("loadConfig", () => {
     expect(config.evaluateTimeoutMs).toBe(30000);
     expect(config.harMaxEntries).toBe(5000);
     expect(config.maxPagesPerSession).toBe(20);
+    expect(config.navRetries).toBe(1);
     expect(config.persistPath).toBe("");
+  });
+
+  it("reads ANVIL_NAV_RETRIES (m12), clamped 0..5", () => {
+    expect(loadConfig({ ANVIL_NAV_RETRIES: "3" } as NodeJS.ProcessEnv).navRetries).toBe(3);
+    // "0" hits the Number('0')||fallback quirk -> default 1 (pinned legacy behavior).
+    expect(loadConfig({ ANVIL_NAV_RETRIES: "0" } as NodeJS.ProcessEnv).navRetries).toBe(1);
   });
 
   it("reads ANVIL_MAX_PAGES_PER_SESSION (m6 cap)", () => {

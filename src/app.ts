@@ -44,6 +44,7 @@ export function buildApp(config: Config): App {
     evaluateTimeoutMs: config.evaluateTimeoutMs,
     harMaxEntries: config.harMaxEntries,
     maxPagesPerSession: config.maxPagesPerSession,
+    navRetries: config.navRetries,
   });
 
   const deps: Deps = { sessionManager, actions, pool, config };
