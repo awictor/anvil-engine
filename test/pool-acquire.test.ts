@@ -64,4 +64,38 @@ describe("BrowserPool.acquire (DEV-0071)", () => {
       vi.useRealTimers();
     }
   });
+
+  // HARDEN: init() uses Promise.allSettled, so a FLAKY launch (some reject) must not throw — the pool
+  // just warms fewer procs. Nothing tested the partial-failure path; a naive Promise.all rewrite would
+  // reject the whole init and take the server down on one bad Chrome spawn.
+  it("init tolerates partial launch failure (allSettled — warms only the successes)", async () => {
+    launchBrowser.mockReset();
+    launchBrowser
+      .mockResolvedValueOnce(fakeProc)
+      .mockRejectedValueOnce(new Error("chrome spawn EACCES"))
+      .mockResolvedValueOnce(fakeProc);
+    const pool = new BrowserPool(3);
+    await pool.init(); // must NOT throw despite the middle rejection
+    expect(pool.available).toBe(2); // only the two fulfilled launches warmed
+    launchBrowser.mockReset();
+    launchBrowser.mockImplementation(async () => fakeProc);
+  });
+
+  // HARDEN: shutdown kills every warm proc and empties the pool; a second shutdown is a no-op (not a
+  // double-kill crash). release() hands the proc to killBrowser.
+  it("shutdown kills all warm procs, is idempotent, and release kills a proc", async () => {
+    const pool = new BrowserPool(2);
+    await pool.init();
+    expect(pool.available).toBe(2);
+    killBrowser.mockClear();
+    await pool.shutdown();
+    expect(killBrowser).toHaveBeenCalledTimes(2);
+    expect(pool.available).toBe(0);
+    await pool.shutdown(); // idempotent — no warm procs, no extra kills
+    expect(killBrowser).toHaveBeenCalledTimes(2);
+
+    killBrowser.mockClear();
+    pool.release(fakeProc);
+    expect(killBrowser).toHaveBeenCalledWith(fakeProc);
+  });
 });
