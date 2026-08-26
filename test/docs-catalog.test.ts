@@ -42,6 +42,19 @@ function fullRouter(): Router {
   return r;
 }
 
+// The raw route list (method + pattern) from every group — used to check catalog COMPLETENESS.
+function allRoutes(): { method: string; pattern: string }[] {
+  return [
+    ...sessionRoutes(stub), ...actionRoutes(stub), ...contentRoutes(stub), ...networkRoutes(stub),
+    ...recordingRoutes(stub), ...downloadRoutes(stub), ...pageRoutes(stub), ...contextRoutes(stub),
+    ...viewRoutes(stub), ...healthRoutes(stub),
+  ].map((r) => ({ method: r.method, pattern: r.pattern }));
+}
+
+// Operational probes deliberately EXCLUDED from the public /v1/docs catalog (health.ts comment:
+// "operational endpoint — not part of the ... public API catalog"). Anything else must be documented.
+const CATALOG_EXCLUDE = new Set(["GET /v1/live", "GET /v1/ready"]);
+
 // Minimal ServerResponse stand-in (same shape as health.test): captures writeHead + JSON body.
 function mkRes() {
   const chunks: Buffer[] = [];
@@ -90,5 +103,19 @@ describe("GET /v1/docs catalog vs the real Router (DEV-0102)", () => {
     const m = readme.match(/\((\d+)\s+endpoints\)/);
     expect(m, 'README.md has a "(N endpoints)" claim').not.toBeNull();
     expect(Number(m![1]), "README endpoint count vs live catalog").toBe(readCatalog().length);
+  });
+
+  // DEV-0123: the REVERSE of the resolves guard — every public Router route must be DOCUMENTED in
+  // the catalog (minus the operational-probe exclude set). Catches a new public route shipped
+  // without a /v1/docs entry, so a consumer never learns of it.
+  it("every public Router route appears in the /v1/docs catalog (minus operational probes)", () => {
+    // Normalize a rest-capture segment (`*name`) to the param form (`:name`) the catalog documents —
+    // both denote "a param here"; the catalog uses `:filename` where the router uses `*filename`.
+    const norm = (p: string) => p.replace(/\/\*/g, "/:");
+    const documented = new Set(readCatalog().map((e) => `${e.method} ${norm(e.path)}`));
+    const undocumented = allRoutes()
+      .map((r) => `${r.method} ${norm(r.pattern)}`)
+      .filter((k) => !CATALOG_EXCLUDE.has(k) && !documented.has(k));
+    expect(undocumented, `public routes missing from /v1/docs catalog: ${JSON.stringify(undocumented)}`).toEqual([]);
   });
 });
