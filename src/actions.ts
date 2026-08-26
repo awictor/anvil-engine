@@ -88,6 +88,12 @@ export interface ActionsConfig {
   navRetries?: number;
 }
 
+/** Structured per-op log payload (m12): session/op/ok/ms. Pure — no payloads or secrets,
+ * so it's safe to emit for every browser action + unit-testable. */
+export function formatOpLog(sessionId: string, op: string, ok: boolean, ms: number): Record<string, unknown> {
+  return { anvil: "op", session: sessionId, op, ok, ms: Math.max(0, Math.round(ms)) };
+}
+
 /** Transient navigation error worth one more try — timeouts, connection resets, Chrome net::
  * errors, 5xx-ish nav failures. NOT a blocked protocol / bad selector / deterministic 4xx.
  * Mirrors Relay src/anvil.ts isTransientError so both sides share the retry taxonomy. */
@@ -168,17 +174,21 @@ export class SessionActions {
    * Runs a browser operation against the session with in-flight tracking
    * (blocks the cleanup race) and a single relaunch retry on crash.
    */
-  private async run<T>(session: Session, fn: (page: Page, browser: Browser) => Promise<T>): Promise<T> {
+  private async run<T>(session: Session, fn: (page: Page, browser: Browser) => Promise<T>, op = "op"): Promise<T> {
     if (!this.sessionManager.beginRequest(session.id)) {
       throw new Error("Session not found");
     }
+    const startedAt = Date.now();
+    let ok = false;
     try {
       for (let attempt = 0; ; attempt++) {
         try {
           const browser = await this.getBrowser(session);
           const pages = await browser.pages();
           const page = pages[0] || (await browser.newPage());
-          return await fn(page, browser);
+          const out = await fn(page, browser);
+          ok = true;
+          return out;
         } catch (err) {
           this.invalidate(session.id);
           if (attempt === 0 && isCrashError(err)) {
@@ -190,6 +200,9 @@ export class SessionActions {
       }
     } finally {
       this.sessionManager.endRequest(session.id);
+      // Per-op structured line (m12): session/op/ok/ms — no payloads/secrets. Lets a consumer
+      // or deploy see browser activity + latency without a debugger.
+      logger.info("op", formatOpLog(session.id, op, ok, Date.now() - startedAt));
     }
   }
 
@@ -235,7 +248,7 @@ export class SessionActions {
         }
       }
       return { url: page.url(), title: await page.title() };
-    });
+    }, "navigate");
   }
 
   async scrape(session: Session, params: { url: string; waitForSelector?: string; format?: string }): Promise<{ content: string; title: string; url: string }> {
@@ -249,7 +262,7 @@ export class SessionActions {
         ? await page.content()
         : await page.evaluate(() => document.body?.innerText || "");
       return { content, title: await page.title(), url: page.url() };
-    });
+    }, "scrape");
   }
 
   async pdf(session: Session, params: { url?: string; format?: string; landscape?: boolean }): Promise<Uint8Array> {

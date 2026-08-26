@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { isTransientNavError } from "../src/actions.js";
+import { isTransientNavError, formatOpLog } from "../src/actions.js";
+
+describe("formatOpLog (m12 anvil-oplog)", () => {
+  it("emits session/op/ok/ms, clamps + rounds ms, no payloads", () => {
+    expect(formatOpLog("sess-1", "navigate", true, 123.7)).toEqual({ anvil: "op", session: "sess-1", op: "navigate", ok: true, ms: 124 });
+    expect(formatOpLog("s", "scrape", false, -5)).toEqual({ anvil: "op", session: "s", op: "scrape", ok: false, ms: 0 });
+  });
+});
 
 // m12 anvil-retry-1: nav-error classifier (drives navigate()'s one-retry). Mirrors Relay's
 // isTransientError taxonomy — transient errors retry, deterministic ones fail fast.
