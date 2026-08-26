@@ -47,14 +47,30 @@ export function createCdpProxy(server: Server, sessionManager: SessionManager): 
     // Connect to Chrome's CDP WebSocket
     const chromeWs = new WebSocket(targetUrl);
 
-    chromeWs.on("open", () => {
-      // Relay messages bidirectionally
-      clientWs.on("message", (data) => {
-        if (chromeWs.readyState === WebSocket.OPEN) {
-          chromeWs.send(data);
-        }
-      });
+    // Puppeteer sends its first CDP commands (Target.getBrowserContexts,
+    // Target.setDiscoverTargets) immediately on connect — often BEFORE chromeWs
+    // finishes opening. Buffer any client messages that arrive pre-open and flush
+    // them on open, so those early commands aren't dropped (which caused
+    // "Protocol error (Target.getBrowserContexts): Target closed").
+    const preOpenBuffer: Array<Buffer | ArrayBuffer | Buffer[]> = [];
 
+    // Client -> Chrome: attach the listener NOW (buffer until chrome is open).
+    clientWs.on("message", (data) => {
+      if (chromeWs.readyState === WebSocket.OPEN) {
+        chromeWs.send(data);
+      } else {
+        preOpenBuffer.push(data as Buffer);
+      }
+    });
+
+    chromeWs.on("open", () => {
+      // Flush anything the client sent before Chrome was ready.
+      for (const data of preOpenBuffer) {
+        if (chromeWs.readyState === WebSocket.OPEN) chromeWs.send(data);
+      }
+      preOpenBuffer.length = 0;
+
+      // Chrome -> client.
       chromeWs.on("message", (data) => {
         if (clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(data);
