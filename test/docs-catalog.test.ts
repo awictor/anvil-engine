@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { Writable } from "node:stream";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Router } from "../src/router.js";
 import { sessionRoutes } from "../src/routes/sessions.js";
 import { actionRoutes } from "../src/routes/actions.js";
@@ -22,6 +25,7 @@ import type { Deps } from "../src/routes/deps.js";
 // Route groups only read deps at REQUEST time (handlers), never at registration, so a bare stub is
 // enough to enumerate patterns. Same trick the contract suites use (docs/NOTES.md "Route-contract").
 const stub = { config: { sessionTimeoutMs: 300000, maxSessions: 10, poolSize: 2 } } as unknown as Deps;
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fullRouter(): Router {
   const r = new Router();
@@ -76,5 +80,15 @@ describe("GET /v1/docs catalog vs the real Router (DEV-0102)", () => {
     const catalog = readCatalog();
     const keys = catalog.map((e) => `${e.method} ${e.path}`);
     expect(new Set(keys).size, "duplicate method+path in /v1/docs catalog").toBe(keys.length);
+  });
+
+  // DEV-0103: README.md hardcodes "(N endpoints)" next to GET /v1/docs. That's a THIRD hand-typed
+  // number (README literal, /v1/docs `endpoints` literal, summed catalog). DEV-0102 tied the docs
+  // literal to the catalog; this ties the README literal too, so all three move together.
+  it("README `(N endpoints)` equals the summed /v1/docs catalog", () => {
+    const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+    const m = readme.match(/\((\d+)\s+endpoints\)/);
+    expect(m, 'README.md has a "(N endpoints)" claim').not.toBeNull();
+    expect(Number(m![1]), "README endpoint count vs live catalog").toBe(readCatalog().length);
   });
 });
