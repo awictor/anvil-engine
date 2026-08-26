@@ -14,6 +14,11 @@ export interface HarEntry {
   duration: number;
   responseSize: number;
   timestamp: string;
+  // Request detail — needed by consumers doing API discovery (e.g. DataFaucet
+  // capture): the headers + body of the outgoing request, not just the URL.
+  requestHeaders?: Record<string, string>;
+  requestBody?: string;
+  resourceType?: string;
 }
 
 export interface ActionEntry {
@@ -382,6 +387,9 @@ export class SessionActions {
               duration: timing ? Math.round(timing.receiveHeadersEnd) : 0,
               responseSize: buffer.length,
               timestamp: new Date().toISOString(),
+              requestHeaders: req.headers(),
+              requestBody: req.postData(),
+              resourceType: req.resourceType(),
             });
           } catch {
             // Skip failed entries
