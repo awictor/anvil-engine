@@ -45,3 +45,18 @@ more shape tests.
   API endpoint from the capture alone (no re-fetch).
 - `captureFrame(session, quality?)` routes quality through `normalizeQuality` (undefined/
   non-finite → default 60; clamp [1,100]; round). Never hand raw `?quality=` to Chrome.
+
+## Resilience: crash classification + relaunch (`src/browser-helper.ts`)
+
+- `isCrashError(err)` = `err instanceof Error && CRASH_PATTERNS.test(err.message)`. Patterns
+  (case-insensitive): `Target closed`, `Session closed`, `Protocol error`, `WebSocket is not
+  open`, `connect ECONNREFUSED`, `browser has disconnected`, `Browser connection failed`.
+  The `instanceof Error` guard is load-bearing: a bare string or `{message:...}` object → false.
+- `withBrowser(wsEndpoint, fn, relaunch?)` connects, runs `fn(page, browser)`, disconnects in
+  `finally`. On the FIRST attempt only, if `isCrashError` AND a `relaunch` cb is given, it
+  relaunches (new endpoint) and retries once; any other error propagates immediately. So a real
+  app error (element-not-found, timeout, `Blocked URL`) is NEVER retried — only a genuine crash.
+- Relay mirrors this on the client side: `src/anvil.ts` `isTransientError` + `withRetry` gate a
+  one-shot retry on transient anvil/network errors (5xx/timeout/reset), NOT on SSRF/4xx/Blocked.
+  Two classifiers, same principle: a wrong bool = wasted retry or a dropped-recoverable failure.
+  Both are regex-over-message — pin every phrase + a negative + a non-Error when editing either.
