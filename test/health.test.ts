@@ -1,0 +1,109 @@
+import { describe, it, expect } from "vitest";
+import { Writable } from "node:stream";
+import { healthRoutes } from "../src/routes/health.js";
+
+// DEV-0049: healthRoutes has real branch logic that no UNIT test exercised — /v1/ready flips
+// 200<->503 on pool/session state, and /v1/docs hardcodes `endpoints: 38` next to a catalog that
+// is the real source of truth, so a drifted count would ship silently (the integration test only
+// re-asserts the same hardcoded 38, it never checks it against the catalog). Drives the actual
+// handlers with the DEV-0048 mock-res harness.
+
+// Minimal ServerResponse stand-in: records writeHead status/headers + collects the JSON body.
+function mkRes() {
+  let statusCode = 0;
+  let headers: Record<string, string> = {};
+  const chunks: Buffer[] = [];
+  const res = new Writable({
+    write(chunk, _enc, cb) {
+      chunks.push(Buffer.from(chunk));
+      cb();
+    },
+  });
+  (res as any).headersSent = false;
+  (res as any).writeHead = (code: number, h?: Record<string, string>) => {
+    statusCode = code;
+    if (h) headers = h;
+    (res as any).headersSent = true;
+    return res;
+  };
+  return {
+    res: res as any,
+    get status() { return statusCode; },
+    get headers() { return headers; },
+    get json() { return JSON.parse(Buffer.concat(chunks).toString()); },
+  };
+}
+
+// deps: only sessionManager.size, pool.available, config.sessionTimeoutMs are read by healthRoutes.
+function fakeDeps(opts: { size?: number; pool?: { available: number } | null }) {
+  return {
+    sessionManager: { size: opts.size ?? 0 },
+    pool: opts.pool === undefined ? null : opts.pool,
+    config: { sessionTimeoutMs: 300000 },
+  } as any;
+}
+
+function route(deps: any, pattern: string) {
+  return healthRoutes(deps).find((r: any) => r.pattern === pattern)!;
+}
+
+const ctx = (r: any) => ({ req: {} as any, res: r.res, url: new URL("http://x/"), params: {}, requestId: "t" });
+
+describe("healthRoutes handlers (DEV-0049)", () => {
+  it("GET /v1/ready -> 200 ready when no pool is configured", () => {
+    const r = mkRes();
+    route(fakeDeps({ pool: null }), "/v1/ready").handler(ctx(r));
+    expect(r.status).toBe(200);
+    expect(r.json.status).toBe("ready");
+    expect(r.json.poolAvailable).toBeNull();
+  });
+
+  it("GET /v1/ready -> 200 ready when pool has capacity", () => {
+    const r = mkRes();
+    route(fakeDeps({ pool: { available: 2 } }), "/v1/ready").handler(ctx(r));
+    expect(r.status).toBe(200);
+    expect(r.json.poolAvailable).toBe(2);
+  });
+
+  it("GET /v1/ready -> 200 ready when pool empty but a session is live", () => {
+    const r = mkRes();
+    route(fakeDeps({ pool: { available: 0 }, size: 1 }), "/v1/ready").handler(ctx(r));
+    expect(r.status).toBe(200);
+    expect(r.json.status).toBe("ready");
+  });
+
+  it("GET /v1/ready -> 503 not_ready when pool empty AND no sessions", () => {
+    const r = mkRes();
+    route(fakeDeps({ pool: { available: 0 }, size: 0 }), "/v1/ready").handler(ctx(r));
+    expect(r.status).toBe(503);
+    expect(r.json.status).toBe("not_ready");
+    expect(r.json.poolAvailable).toBe(0);
+  });
+
+  it("GET /v1/health -> 200 with session count + configured timeout", () => {
+    const r = mkRes();
+    route(fakeDeps({ size: 3 }), "/v1/health").handler(ctx(r));
+    expect(r.status).toBe(200);
+    expect(r.json.status).toBe("ok");
+    expect(r.json.sessions).toBe(3);
+    expect(r.json.sessionTimeoutMs).toBe(300000);
+    expect(r.json.multiSession).toBe(true);
+  });
+
+  it("GET /v1/live -> 200 alive", () => {
+    const r = mkRes();
+    route(fakeDeps({}), "/v1/live").handler(ctx(r));
+    expect(r.status).toBe(200);
+    expect(r.json.status).toBe("alive");
+  });
+
+  it("GET /v1/docs declared `endpoints` equals the summed catalog (drift guard)", () => {
+    const r = mkRes();
+    route(fakeDeps({}), "/v1/docs").handler(ctx(r));
+    expect(r.status).toBe(200);
+    const cats = r.json.categories as Record<string, unknown[]>;
+    const summed = Object.values(cats).reduce((n, arr) => n + arr.length, 0);
+    // If someone adds/removes a catalog entry without touching the hardcoded count, this fails.
+    expect(r.json.endpoints).toBe(summed);
+  });
+});
