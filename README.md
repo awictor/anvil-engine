@@ -141,6 +141,8 @@ values fail fast with an aggregated error).
 | `ANVIL_MAX_SESSIONS` | `10` | Reject new sessions past this many (503) |
 | `ANVIL_RATE_LIMIT_RPM` | `0` (off) | Per-IP requests/minute token bucket |
 | `ANVIL_POOL_SIZE` | `0` (off) | Warm pre-launched browser instances |
+| `ANVIL_MAX_PAGES_PER_SESSION` | `20` | Reject `openPage` past this many tabs per session (runaway-tab guard) |
+| `ANVIL_NAV_RETRIES` | `1` | Extra `navigate` retries on a transient error (timeout/reset/`net::ERR_`) before failing; deterministic errors fail fast (cap 5) |
 | `ANVIL_EVALUATE_TIMEOUT_MS` | `30000` | Max `evaluate` runtime before termination (cap 60000) |
 | `ANVIL_HAR_MAX_ENTRIES` | `5000` | Cap on HAR entries captured per session |
 | `ANVIL_WEBHOOK_URL` | _(unset)_ | POST session lifecycle events here |
