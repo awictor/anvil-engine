@@ -43,6 +43,7 @@ export function buildApp(config: Config): App {
   const actions = new SessionActions(sessionManager, {
     evaluateTimeoutMs: config.evaluateTimeoutMs,
     harMaxEntries: config.harMaxEntries,
+    maxPagesPerSession: config.maxPagesPerSession,
   });
 
   const deps: Deps = { sessionManager, actions, pool, config };

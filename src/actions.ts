@@ -80,6 +80,9 @@ export interface ActionsConfig {
   // Max bytes of each response body kept as responseBodyPreview (DEV-0006). Bounded so a big payload
   // can't bloat the HAR; enough to classify JSON + see the top-level shape. 0 disables the preview.
   harBodyPreviewBytes?: number;
+  // Per-session cap on open pages/tabs (m6): protects a shared/free-infra deploy from a runaway task
+  // spawning unbounded tabs. Enforced in openPage. 0/absent = unlimited (default is generous).
+  maxPagesPerSession?: number;
 }
 
 /**
@@ -273,6 +276,13 @@ export class SessionActions {
       throw new Error("Blocked protocol: only http/https allowed");
     }
     return this.run(session, async (_page, browser) => {
+      // Per-session tab cap (m6): reject before opening so a runaway task can't spawn
+      // unbounded tabs on a shared deploy. 0/absent = unlimited.
+      const cap = this.config.maxPagesPerSession ?? 0;
+      if (cap > 0) {
+        const open = (await browser.pages()).length;
+        if (open >= cap) throw new Error(`Page limit reached: this session already has ${open}/${cap} pages open`);
+      }
       const newPage = await browser.newPage();
       if (url) {
         await newPage.goto(url, { waitUntil: "networkidle2", timeout: 60000 });

@@ -15,7 +15,15 @@ describe("loadConfig", () => {
     expect(config.poolSize).toBe(0);
     expect(config.evaluateTimeoutMs).toBe(30000);
     expect(config.harMaxEntries).toBe(5000);
+    expect(config.maxPagesPerSession).toBe(20);
     expect(config.persistPath).toBe("");
+  });
+
+  it("reads ANVIL_MAX_PAGES_PER_SESSION (m6 cap)", () => {
+    expect(loadConfig({ ANVIL_MAX_PAGES_PER_SESSION: "5" } as NodeJS.ProcessEnv).maxPagesPerSession).toBe(5);
+    // "0" hits the shared Number('0')||fallback quirk -> default 20 (can't disable via env; the
+    // default IS the guard). Pinned so this matches numeric()'s documented legacy behavior.
+    expect(loadConfig({ ANVIL_MAX_PAGES_PER_SESSION: "0" } as NodeJS.ProcessEnv).maxPagesPerSession).toBe(20);
   });
 
   it("reads ANVIL_PERSIST_PATH when set", () => {

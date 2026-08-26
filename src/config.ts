@@ -9,6 +9,7 @@ export interface Config {
   webhookUrl: string;
   evaluateTimeoutMs: number;
   harMaxEntries: number;
+  maxPagesPerSession: number;
   persistPath: string;
 }
 
@@ -54,6 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const poolSize = numeric(env, { env: "ANVIL_POOL_SIZE", fallback: 0, min: 0 }, problems);
   const evaluateTimeoutMs = numeric(env, { env: "ANVIL_EVALUATE_TIMEOUT_MS", fallback: 30000, min: 100, max: 60000 }, problems);
   const harMaxEntries = numeric(env, { env: "ANVIL_HAR_MAX_ENTRIES", fallback: 5000, min: 1 }, problems);
+  const maxPagesPerSession = numeric(env, { env: "ANVIL_MAX_PAGES_PER_SESSION", fallback: 20, min: 0 }, problems);
 
   const webhookUrl = env.ANVIL_WEBHOOK_URL || "";
   if (webhookUrl) {
@@ -80,6 +82,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     webhookUrl,
     evaluateTimeoutMs,
     harMaxEntries,
+    maxPagesPerSession,
     persistPath: env.ANVIL_PERSIST_PATH || "",
   };
 }
