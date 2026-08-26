@@ -55,6 +55,18 @@ export function harResponseFields(
   return { responseContentType, responseBodyPreview };
 }
 
+// PURE (DEV-0015): normalize a live-view JPEG quality request to a value Chrome accepts.
+// Puppeteer's screenshot() rejects a quality outside 1-100 or a non-integer, and page.screenshot
+// with quality=NaN throws — so an out-of-range or non-numeric ?quality= (0, 999, -5, NaN, undefined)
+// must never reach it. The route already 400s a non-finite string, but callers of captureFrame
+// (SDK, stream loop, future consumers) can pass anything; this is the last guard.
+//   - undefined/NaN -> default (60); the caller asked for "no preference".
+//   - clamp to [1,100], round to an integer (Chrome wants an int).
+export function normalizeQuality(quality: number | undefined, def = 60): number {
+  const q = quality === undefined || !Number.isFinite(quality) ? def : quality;
+  return Math.max(1, Math.min(100, Math.round(q)));
+}
+
 export interface ActionEntry {
   action: string;
   params: Record<string, unknown>;
@@ -231,8 +243,8 @@ export class SessionActions {
   }
 
   /** Captures a single JPEG frame of the current viewport — building block for the live session view. */
-  async captureFrame(session: Session, quality = 60): Promise<Uint8Array> {
-    const q = Math.max(1, Math.min(100, Math.round(quality)));
+  async captureFrame(session: Session, quality?: number): Promise<Uint8Array> {
+    const q = normalizeQuality(quality);
     return this.run(session, (page) => page.screenshot({ type: "jpeg", quality: q, encoding: "binary" }));
   }
 
