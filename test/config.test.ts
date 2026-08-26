@@ -70,4 +70,33 @@ describe("loadConfig", () => {
   it("caps evaluate timeout at 60s", () => {
     expect(() => loadConfig({ ANVIL_EVALUATE_TIMEOUT_MS: "120000" } as NodeJS.ProcessEnv)).toThrow(ConfigError);
   });
+
+  // DEV-0045: the min side of the range guard + the exact problem wording. above-max (port 70000,
+  // eval 120000) is covered above; the below-min branch and the 'minimum'/'maximum' messages were not.
+  it("rejects a below-minimum evaluate timeout, naming the variable + 'minimum'", () => {
+    expect(() => loadConfig({ ANVIL_EVALUATE_TIMEOUT_MS: "50" } as NodeJS.ProcessEnv)).toThrow(ConfigError); // min 100
+    try {
+      loadConfig({ ANVIL_EVALUATE_TIMEOUT_MS: "50" } as NodeJS.ProcessEnv);
+    } catch (err) {
+      const p = (err as ConfigError).problems.join(" ");
+      expect(p).toContain("ANVIL_EVALUATE_TIMEOUT_MS");
+      expect(p).toMatch(/minimum/i);
+    }
+  });
+
+  it("the above-max evaluate-timeout problem says 'maximum'", () => {
+    try {
+      loadConfig({ ANVIL_EVALUATE_TIMEOUT_MS: "99999" } as NodeJS.ProcessEnv);
+    } catch (err) {
+      expect((err as ConfigError).problems.join(" ")).toMatch(/maximum/i);
+    }
+  });
+
+  // DEV-0046: the Number(raw)||fallback quirk beyond session-timeout — '0' on any numeric var yields
+  // the FALLBACK, not 0. A refactor to `?? fallback` would let '0' stick and (e.g.) disable the
+  // session cap. Pin it on maxSessions too (fallback 10) so the quirk is guarded at >1 call site.
+  it("'0' resolves to the fallback for maxSessions too (Number()||fallback quirk)", () => {
+    const config = loadConfig({ ANVIL_MAX_SESSIONS: "0" } as NodeJS.ProcessEnv);
+    expect(config.maxSessions).toBe(10); // NOT 0
+  });
 });
