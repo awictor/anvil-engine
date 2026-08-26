@@ -3,6 +3,28 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+import { contentTypeFor } from "../src/routes/downloads.js";
+
+describe("contentTypeFor (DEV-0047)", () => {
+  it("maps common extensions to their mime type (case-insensitive)", () => {
+    expect(contentTypeFor("report.pdf")).toBe("application/pdf");
+    expect(contentTypeFor("shot.PNG")).toBe("image/png");
+    expect(contentTypeFor("a.jpeg")).toBe("image/jpeg");
+    expect(contentTypeFor("data.json")).toBe("application/json");
+    expect(contentTypeFor("notes.txt")).toBe("text/plain");
+    expect(contentTypeFor("page.html")).toBe("text/html");
+    expect(contentTypeFor("rows.csv")).toBe("text/csv");
+    expect(contentTypeFor("bundle.zip")).toBe("application/zip");
+  });
+  it("defaults unknown / no extension to application/octet-stream", () => {
+    expect(contentTypeFor("weird.xyz")).toBe("application/octet-stream");
+    expect(contentTypeFor("noext")).toBe("application/octet-stream");
+    expect(contentTypeFor("archive.tar.unknownext")).toBe("application/octet-stream");
+  });
+  it("uses the LAST extension for a multi-dot name", () => {
+    expect(contentTypeFor("report.final.pdf")).toBe("application/pdf");
+  });
+});
 
 describe("anvil-engine file download endpoints", () => {
   describe("GET /v1/downloads — list endpoint contract", () => {
