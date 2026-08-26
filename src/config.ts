@@ -12,6 +12,7 @@ export interface Config {
   maxPagesPerSession: number;
   navRetries: number;
   persistPath: string;
+  metricsHeartbeatMs: number;
 }
 
 export class ConfigError extends Error {
@@ -58,6 +59,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const harMaxEntries = numeric(env, { env: "ANVIL_HAR_MAX_ENTRIES", fallback: 5000, min: 1 }, problems);
   const maxPagesPerSession = numeric(env, { env: "ANVIL_MAX_PAGES_PER_SESSION", fallback: 20, min: 0 }, problems);
   const navRetries = numeric(env, { env: "ANVIL_NAV_RETRIES", fallback: 1, min: 0, max: 5 }, problems);
+  // DEV-0112: wall-clock ops heartbeat period. 0 disables (default off — opt-in for a 24/7 deploy).
+  const metricsHeartbeatMs = numeric(env, { env: "ANVIL_METRICS_HEARTBEAT_MS", fallback: 0, min: 0 }, problems);
 
   const webhookUrl = env.ANVIL_WEBHOOK_URL || "";
   if (webhookUrl) {
@@ -87,5 +90,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     maxPagesPerSession,
     navRetries,
     persistPath: env.ANVIL_PERSIST_PATH || "",
+    metricsHeartbeatMs,
   };
 }

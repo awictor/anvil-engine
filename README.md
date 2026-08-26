@@ -147,6 +147,7 @@ values fail fast with an aggregated error).
 | `ANVIL_HAR_MAX_ENTRIES` | `5000` | Cap on HAR entries captured per session |
 | `ANVIL_WEBHOOK_URL` | _(unset)_ | POST session lifecycle events here |
 | `ANVIL_PERSIST_PATH` | _(unset, disabled)_ | Persist sessions + cookies to this file on shutdown and restore on startup. **Cookies are stored in plaintext at this path — restrict file permissions or avoid on shared hosts.** |
+| `ANVIL_METRICS_HEARTBEAT_MS` | `0` (off) | Log a periodic `metrics_heartbeat` line (activeSessions, poolAvailable, requestsServed, errorsCount) every N ms for 24/7 time-series ops visibility; on-request `/v1/metrics` is always available |
 | `CHROME_PATH` | auto-detected | Path to the Chrome/Chromium binary |
 | `ANVIL_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
 | `ANVIL_REQUIRE_CDP_AUTH` | `false` | When `true`, the raw CDP proxy rejects any connection without the `ANVIL_API_KEY` token. **Leave off only on a trusted network — the CDP endpoint grants full remote control of the browser.** Set `ANVIL_API_KEY` too, or every CDP connection is rejected. |

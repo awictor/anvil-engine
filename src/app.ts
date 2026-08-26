@@ -6,7 +6,8 @@ import { BrowserPool } from "./pool.js";
 import { RateLimiter } from "./rate-limiter.js";
 import { type Config } from "./config.js";
 import { createLogger } from "./logger.js";
-import { recordRequest } from "./metrics.js";
+import { recordRequest, counters } from "./metrics.js";
+import { makeMetricsHeartbeat } from "./metrics-heartbeat.js";
 import { Router } from "./router.js";
 import { corsMiddleware, rateLimitMiddleware, authMiddleware, errorToResponse, type Middleware } from "./middleware.js";
 import { json } from "./http-utils.js";
@@ -118,6 +119,22 @@ export function buildApp(config: Config): App {
 
   createCdpProxy(server, sessionManager);
 
+  // DEV-0112: periodic ops heartbeat — logs a compact metrics line on an interval so a 24/7 deploy
+  // has time-series health in logs (not just on-request /v1/metrics). Fields mirror /v1/metrics +
+  // /v1/health (activeSessions, poolAvailable, requestsServed, errorsCount). Off unless the env is set.
+  const metricsHeartbeat = makeMetricsHeartbeat({
+    periodMs: config.metricsHeartbeatMs,
+    emit: () => logger.info("metrics_heartbeat", {
+      activeSessions: sessionManager.size,
+      poolAvailable: pool ? pool.available : null,
+      requestsServed: counters.requestsServed,
+      errorsCount: counters.errorsCount,
+      sessionsCreated: counters.sessionsCreated,
+      peakConcurrent: counters.peakConcurrent,
+    }),
+    onError: () => {},
+  });
+
   return {
     server,
     sessionManager,
@@ -146,11 +163,13 @@ export function buildApp(config: Config): App {
       }
       sessionManager.startCleanup(config.sessionTimeoutMs);
       if (rateLimiter) rateLimiter.startCleanup();
+      metricsHeartbeat.start(); // no-op if ANVIL_METRICS_HEARTBEAT_MS=0 (default)
     },
     async stop() {
       server.close();
       sessionManager.stopCleanup();
       if (rateLimiter) rateLimiter.stopCleanup();
+      metricsHeartbeat.stop();
       // Persist live sessions + cookies before tearing them down (opt-in).
       if (config.persistPath) {
         const persisted = [];
