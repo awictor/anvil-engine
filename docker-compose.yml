@@ -1,0 +1,24 @@
+# Self-host anvil-engine with one command: `docker compose up` (referenced by DataFaucet's
+# docs/OWNER-ACTION.md step 4, before flipping BROWSER_BACKEND=anvil). Wraps the existing Dockerfile.
+# Optional ANVIL_* knobs are forwarded from the host env with safe defaults so a bare `docker compose
+# up` works out of the box; set them in the shell or an .env file to override.
+services:
+  anvil:
+    build: .
+    image: anvil-engine
+    ports:
+      - "3000:3000"
+    environment:
+      # Bind inside the container (Dockerfile already defaults these; kept explicit for clarity).
+      ANVIL_ENGINE_PORT: "3000"
+      ANVIL_HOST: "0.0.0.0"
+      # Optional: set a token to require auth on the API (empty = open, fine for a private host).
+      ANVIL_API_KEY: "${ANVIL_API_KEY:-}"
+      # Optional capacity/pool knobs (fall through to the app defaults when unset).
+      ANVIL_MAX_SESSIONS: "${ANVIL_MAX_SESSIONS:-10}"
+      ANVIL_POOL_SIZE: "${ANVIL_POOL_SIZE:-0}"
+      ANVIL_SESSION_TIMEOUT_MS: "${ANVIL_SESSION_TIMEOUT_MS:-300000}"
+      # Optional periodic ops metrics line (0 = off; see README ANVIL_METRICS_HEARTBEAT_MS).
+      ANVIL_METRICS_HEARTBEAT_MS: "${ANVIL_METRICS_HEARTBEAT_MS:-0}"
+    restart: unless-stopped
+    # The image's HEALTHCHECK already probes GET /v1/live; compose surfaces it as the health status.
