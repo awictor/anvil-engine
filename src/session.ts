@@ -209,13 +209,16 @@ export class SessionManager {
    * across sessions (a session stuck >0 is un-reapable since DEV-0156, so this is the leak signal);
    * oldestAgeMs = age of the oldest session; oldestIdleMs = longest idle time. All 0 when no sessions.
    */
-  lifecycleStats(now: number): { inFlightTotal: number; oldestAgeMs: number; oldestIdleMs: number } {
-    let inFlightTotal = 0, oldestAgeMs = 0, oldestIdleMs = 0;
+  lifecycleStats(now: number): { inFlightTotal: number; oldestAgeMs: number; oldestIdleMs: number; oldestInFlightMs: number } {
+    let inFlightTotal = 0, oldestAgeMs = 0, oldestIdleMs = 0, oldestInFlightMs = 0;
     for (const s of this.sessions.values()) {
       inFlightTotal += s.inFlight;
       oldestAgeMs = Math.max(oldestAgeMs, now - s.createdAt);
       oldestIdleMs = Math.max(oldestIdleMs, now - s.lastActivityAt);
+      // Longest currently-running op (DEV-0193): the leading indicator of a hang forming BEFORE the
+      // stuck-cap (DEV-0192) force-kills. inFlightSince is 0 when idle, so only count active ops.
+      if (s.inFlight > 0 && s.inFlightSince > 0) oldestInFlightMs = Math.max(oldestInFlightMs, now - s.inFlightSince);
     }
-    return { inFlightTotal, oldestAgeMs, oldestIdleMs };
+    return { inFlightTotal, oldestAgeMs, oldestIdleMs, oldestInFlightMs };
   }
 }

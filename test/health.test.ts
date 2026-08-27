@@ -40,7 +40,7 @@ function fakeDeps(opts: { size?: number; pool?: { available: number } | null }) 
   return {
     sessionManager: {
       size: opts.size ?? 0,
-      lifecycleStats: () => ({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0 }),
+      lifecycleStats: () => ({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0, oldestInFlightMs: 0 }),
     },
     pool: opts.pool === undefined ? null : opts.pool,
     config: { sessionTimeoutMs: 300000, maxSessions: 10, poolSize: 2 },
@@ -143,6 +143,8 @@ describe("GET /v1/metrics handler (DEV-0050)", () => {
     expect(r.json.maxSessions).toBe(10);
     expect(r.json.poolSize).toBe(2);
     expect(r.json.poolAvailable).toBe(0);
+    // DEV-0193: the oldest-in-flight-op signal is surfaced (leading indicator before the stuck-cap).
+    expect(r.json.oldestInFlightMs).toBe(0);
     // endpoints is the per-route snapshot object, keyed by normalized route.
     expect(r.json.endpoints).toBeTypeOf("object");
     expect(r.json.endpoints).not.toBeNull();

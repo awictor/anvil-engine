@@ -212,19 +212,26 @@ describe("anvil-engine session timeout", () => {
       expect(mgr.sweepIdle(1_000_000, 300000)).not.toContain("fresh"); // 1000ms idle < 300000
     });
 
-    it("DEV-0158: lifecycleStats sums inFlight and reports the oldest age/idle", () => {
+    it("DEV-0158/0193: lifecycleStats sums inFlight + reports oldest age/idle/in-flight-op", () => {
       const mgr = new SessionManager(fakePool);
-      seed(mgr, { id: "a", createdAt: 100_000, lastActivityAt: 900_000, inFlight: 2 });
-      seed(mgr, { id: "b", createdAt: 500_000, lastActivityAt: 500_000, inFlight: 1 });
+      seed(mgr, { id: "a", createdAt: 100_000, lastActivityAt: 900_000, inFlight: 2, inFlightSince: 700_000 });
+      seed(mgr, { id: "b", createdAt: 500_000, lastActivityAt: 500_000, inFlight: 1, inFlightSince: 400_000 });
       const st = mgr.lifecycleStats(1_000_000);
       expect(st.inFlightTotal).toBe(3);            // 2 + 1
       expect(st.oldestAgeMs).toBe(900_000);        // now - min(createdAt) = 1_000_000 - 100_000
       expect(st.oldestIdleMs).toBe(500_000);       // now - min(lastActivityAt) = 1_000_000 - 500_000
+      expect(st.oldestInFlightMs).toBe(600_000);   // DEV-0193: now - min(inFlightSince over active) = 1_000_000 - 400_000
+    });
+
+    it("DEV-0193: oldestInFlightMs is 0 when no op is in flight (idle sessions ignored)", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "idle", createdAt: 0, lastActivityAt: 900_000, inFlight: 0, inFlightSince: 0 });
+      expect(mgr.lifecycleStats(1_000_000).oldestInFlightMs).toBe(0);
     });
 
     it("DEV-0158: lifecycleStats is all-zero with no sessions", () => {
       const mgr = new SessionManager(fakePool);
-      expect(mgr.lifecycleStats(1_000_000)).toEqual({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0 });
+      expect(mgr.lifecycleStats(1_000_000)).toEqual({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0, oldestInFlightMs: 0 });
     });
 
     it("DEV-0159: list() rows carry idleMs + inFlight for per-session triage", () => {

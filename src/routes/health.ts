@@ -66,6 +66,8 @@ export function healthRoutes(deps: Deps): Route[] {
           inFlightTotal: life.inFlightTotal,
           oldestSessionAgeMs: life.oldestAgeMs,
           oldestSessionIdleMs: life.oldestIdleMs,
+          // Longest currently-running op (DEV-0193): rises as a hang forms, before the stuck-cap fires.
+          oldestInFlightMs: life.oldestInFlightMs,
           uptime: process.uptime(),
           endpoints: snapshot(),
         });
