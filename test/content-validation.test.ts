@@ -92,3 +92,33 @@ describe("BLOCKED_PROTOCOL guard (DEV-0079)", () => {
     expect(r.status).not.toBe(400);
   });
 });
+
+describe("scrape route forwards waitUntil/timeout to actions (DEV-0133)", () => {
+  // A recording `actions` that captures the params scrape() received (no browser). Proves the
+  // route threads body.waitUntil/body.timeout through; gotoOpts itself is unit-tested separately.
+  function recordingDeps() {
+    let captured: any = null;
+    const actions = { scrape: async (_session: any, params: any) => { captured = params; return { content: "", title: "", url: params.url }; } };
+    const deps2 = { sessionManager: { getActive: () => ({ id: "s" }), get: () => ({ id: "s" }) }, actions } as any;
+    return { deps2, get captured() { return captured; } };
+  }
+  function route2(deps2: any, pattern: string, method: string) {
+    return contentRoutes(deps2).find((r: any) => r.pattern === pattern && r.method === method)!;
+  }
+
+  it("forwards a caller-supplied waitUntil + timeout", async () => {
+    const rec = recordingDeps();
+    const r = mkRes();
+    await route2(rec.deps2, "/v1/scrape", "POST").handler(ctx(mkReq({ url: "https://example.com", waitUntil: "domcontentloaded", timeout: 5000 }), r));
+    expect(rec.captured.waitUntil).toBe("domcontentloaded");
+    expect(rec.captured.timeout).toBe(5000);
+  });
+
+  it("leaves waitUntil/timeout undefined when omitted (actions defaults apply)", async () => {
+    const rec = recordingDeps();
+    const r = mkRes();
+    await route2(rec.deps2, "/v1/scrape", "POST").handler(ctx(mkReq({ url: "https://example.com" }), r));
+    expect(rec.captured.waitUntil).toBeUndefined();
+    expect(rec.captured.timeout).toBeUndefined();
+  });
+});

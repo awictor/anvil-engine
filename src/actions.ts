@@ -276,10 +276,13 @@ export class SessionActions {
     }, "navigate");
   }
 
-  async scrape(session: Session, params: { url: string; waitForSelector?: string; format?: string }): Promise<{ content: string; title: string; url: string }> {
+  async scrape(session: Session, params: { url: string; waitForSelector?: string; format?: string; waitUntil?: string; timeout?: number }): Promise<{ content: string; title: string; url: string }> {
     return this.run(session, async (page) => {
       await this.authenticated(session, page);
-      await page.goto(params.url, { waitUntil: "networkidle2", timeout: 60000 });
+      // DEV-0133: scrape is the capture hot path (relay + DataFaucet). Let the caller pick a faster
+      // wait strategy / shorter timeout via the shared gotoOpts guard so a polling page can't burn
+      // the full 60s. Default stays networkidle2/60000 when omitted (no behavior change).
+      await page.goto(params.url, gotoOpts(params.waitUntil, params.timeout));
       if (params.waitForSelector) {
         await page.waitForSelector(params.waitForSelector, { timeout: 10000 });
       }

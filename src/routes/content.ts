@@ -28,6 +28,8 @@ export function contentRoutes(deps: Deps): Route[] {
           url: body.url,
           waitForSelector: body.waitForSelector,
           format: body.format,
+          waitUntil: body.waitUntil,
+          timeout: body.timeout,
         });
         json(res, 200, result);
       },
