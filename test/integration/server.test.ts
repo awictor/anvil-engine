@@ -63,13 +63,13 @@ describe("integration: open server (no auth, no rate limit)", () => {
     expect(body).toHaveProperty("endpoints");
   });
 
-  it("GET /v1/docs reports version 1.0.0 and 38 endpoints", async () => {
+  it("GET /v1/docs reports version 1.0.0 and 40 endpoints", async () => {
     const res = await fetch(`${base}/v1/docs`);
     const body = await res.json();
     expect(body.version).toBe("1.0.0");
-    expect(body.endpoints).toBe(38);
+    expect(body.endpoints).toBe(40); // DEV-0171: catalog completed with /v1/live + /v1/ready
     const listed = Object.values(body.categories).flat() as unknown[];
-    expect(listed).toHaveLength(38);
+    expect(listed).toHaveLength(40);
   });
 
   it("unknown route returns 404 Not found", async () => {

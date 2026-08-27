@@ -103,7 +103,7 @@ await anvil.releaseSession(id);
 
 ## API overview
 
-The full, authoritative list lives at `GET /v1/docs` (38 endpoints). Summary:
+The full, authoritative list lives at `GET /v1/docs` (40 endpoints). Summary:
 
 | Area | Endpoints |
 |---|---|

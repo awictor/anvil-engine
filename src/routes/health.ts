@@ -77,7 +77,7 @@ export function healthRoutes(deps: Deps): Route[] {
       handler: ({ res }) => {
         json(res, 200, {
           version: "1.0.0",
-          endpoints: 38,
+          endpoints: 40,
           categories: {
             sessions: [
               { method: "POST", path: "/v1/sessions", description: "Create a new browser session" },
@@ -132,6 +132,8 @@ export function healthRoutes(deps: Deps): Route[] {
             ],
             observability: [
               { method: "GET", path: "/v1/health", description: "Health check" },
+              { method: "GET", path: "/v1/live", description: "Liveness probe (200 alive)" },
+              { method: "GET", path: "/v1/ready", description: "Readiness probe (200 ready / 503 not_ready)" },
               { method: "GET", path: "/v1/metrics", description: "Operational metrics" },
               { method: "GET", path: "/v1/docs", description: "API documentation" },
             ],
