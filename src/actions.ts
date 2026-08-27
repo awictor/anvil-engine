@@ -67,6 +67,19 @@ export function normalizeQuality(quality: number | undefined, def = 60): number 
   return Math.max(1, Math.min(100, Math.round(q)));
 }
 
+// PURE: the paper formats Puppeteer's page.pdf() accepts. Anything else makes it THROW
+// "Unknown paper format" — and /v1/pdf takes body.format verbatim from the caller, so an
+// arbitrary string (typo "letr", "A9", "") would crash the op with a 500 instead of a PDF.
+const PDF_FORMATS = new Set(["letter", "legal", "tabloid", "ledger", "a0", "a1", "a2", "a3", "a4", "a5", "a6"]);
+
+// Normalize a requested PDF paper format to one Chrome accepts. Case-insensitive; an unknown
+// or absent value falls back to "A4" (the prior default) rather than reaching page.pdf() and
+// throwing. Mirrors normalizeQuality: the last guard for a user-supplied render option.
+export function normalizePdfFormat(format: string | undefined, def = "A4"): string {
+  if (typeof format !== "string") return def;
+  return PDF_FORMATS.has(format.trim().toLowerCase()) ? format.trim() : def;
+}
+
 export interface ActionEntry {
   action: string;
   params: Record<string, unknown>;
@@ -272,7 +285,7 @@ export class SessionActions {
         await page.goto(params.url, { waitUntil: "networkidle2", timeout: 60000 });
       }
       return page.pdf({
-        format: (params.format as "a4") || "A4",
+        format: normalizePdfFormat(params.format) as "a4",
         landscape: params.landscape || false,
         printBackground: true,
       });
