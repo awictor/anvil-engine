@@ -15,6 +15,9 @@ export interface Session {
   options: LaunchOptions;
   /** In-flight browser operations; destroy() waits for this to drain. */
   inFlight: number;
+  /** Epoch ms when inFlight last rose 0->1; 0 when idle. The stuck-cap measures op duration off this,
+   * NOT session age, so a long-lived healthy session isn't force-killed mid-op (DEV-0192). */
+  inFlightSince: number;
   /** Set when destroy() starts — blocks new work on this session. */
   destroying: boolean;
 }
@@ -42,6 +45,7 @@ export class SessionManager {
       lastActivityAt: now,
       options,
       inFlight: 0,
+      inFlightSince: 0,
       destroying: false,
     };
 
@@ -68,13 +72,17 @@ export class SessionManager {
   beginRequest(id: string): boolean {
     const session = this.sessions.get(id);
     if (!session || session.destroying) return false;
+    if (session.inFlight === 0) session.inFlightSince = Date.now(); // 0->1: start the op-duration clock
     session.inFlight++;
     return true;
   }
 
   endRequest(id: string): void {
     const session = this.sessions.get(id);
-    if (session && session.inFlight > 0) session.inFlight--;
+    if (session && session.inFlight > 0) {
+      session.inFlight--;
+      if (session.inFlight === 0) session.inFlightSince = 0; // back to idle: stop the clock
+    }
   }
 
   async destroy(id: string): Promise<Session | undefined> {
@@ -158,13 +166,17 @@ export class SessionManager {
     const reaped: string[] = [];
     for (const [id, session] of this.sessions) {
       if (session.inFlight > 0) {
-        if (stuckMs > 0 && now - session.createdAt > stuckMs) {
-          logger.warn("Session stuck — force-destroying with an operation still in flight", { sessionId: id, ageMs: now - session.createdAt, inFlight: session.inFlight });
+        // Gate on how long the CURRENT op has been in flight, not total session age (DEV-0192): a
+        // long-lived healthy session doing quick ops must NOT be force-killed mid-op just for being
+        // old. inFlightSince is set at the 0->1 transition; only a genuinely long-running/hung op trips.
+        const opMs = now - session.inFlightSince;
+        if (stuckMs > 0 && session.inFlightSince > 0 && opMs > stuckMs) {
+          logger.warn("Session stuck — force-destroying with an operation still in flight", { sessionId: id, opMs, ageMs: now - session.createdAt, inFlight: session.inFlight });
           this.destroy(id);
           // Distinct event (DEV-0167): a hung-op force-kill is an anomaly to investigate, NOT the
           // routine idle timeout below — a monitor must be able to tell them apart. Carry the WHY
           // (DEV-0168) so the alert is self-describing without a /v1/sessions call-back.
-          fireWebhook("session.stuck", id, { ageMs: now - session.createdAt, inFlight: session.inFlight });
+          fireWebhook("session.stuck", id, { opMs, ageMs: now - session.createdAt, inFlight: session.inFlight });
           reaped.push(id);
         }
         continue;

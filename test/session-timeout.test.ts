@@ -155,7 +155,7 @@ describe("anvil-engine session timeout", () => {
     // A fake pool so destroy() releases instead of killing a real browser process.
     const fakePool = { acquire: async () => ({}), release: () => {}, available: 1 } as any;
     const seed = (mgr: SessionManager, over: Partial<any>) => {
-      const s = { id: over.id, status: "live", browserProcess: { downloadDir: "" }, createdAt: 0, lastActivityAt: 0, options: {}, inFlight: 0, destroying: false, ...over };
+      const s = { id: over.id, status: "live", browserProcess: { downloadDir: "" }, createdAt: 0, lastActivityAt: 0, options: {}, inFlight: 0, inFlightSince: 0, destroying: false, ...over };
       (mgr as any).sessions.set(s.id, s);
       return s;
     };
@@ -185,18 +185,25 @@ describe("anvil-engine session timeout", () => {
       expect((mgr as any).sessions.has("busy")).toBe(true);
     });
 
-    it("DEV-0160: stuckMs set + age exceeded — force-reaps despite inFlight", () => {
+    it("DEV-0160/0192: stuckMs set + OP in flight longer than stuckMs — force-reaps", () => {
       const mgr = new SessionManager(fakePool);
-      seed(mgr, { id: "stuck", createdAt: 0, lastActivityAt: 999_999, inFlight: 2 });
-      // idle guard would keep it (idle ~0), but age (1_000_000) > stuckMs (500_000) forces destroy.
-      // sweepIdle returns the id as soon as it calls destroy() (destroy then drains inFlight itself).
+      // op started at t=1 (inFlightSince>0 since inFlight>0), swept at t=1_000_000 -> opMs ~1_000_000 > 500_000.
+      seed(mgr, { id: "stuck", createdAt: 0, lastActivityAt: 999_999, inFlight: 2, inFlightSince: 1 });
       expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).toContain("stuck");
     });
 
-    it("DEV-0160: stuckMs set but age NOT exceeded — inFlight session survives", () => {
+    it("DEV-0192: an OLD session whose CURRENT op just started is NOT force-reaped (op-age, not session-age)", () => {
       const mgr = new SessionManager(fakePool);
-      seed(mgr, { id: "young", createdAt: 900_000, lastActivityAt: 0, inFlight: 1 });
-      expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).not.toContain("young"); // age 100k < 500k
+      // created long ago (age 1_000_000) but the op began at t=900_000 -> opMs 100k < stuckMs 500k.
+      seed(mgr, { id: "old-but-busy", createdAt: 0, lastActivityAt: 0, inFlight: 1, inFlightSince: 900_000 });
+      expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).not.toContain("old-but-busy");
+      expect((mgr as any).sessions.has("old-but-busy")).toBe(true);
+    });
+
+    it("DEV-0160: stuckMs set but OP NOT long enough — inFlight session survives", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "young", createdAt: 900_000, lastActivityAt: 0, inFlight: 1, inFlightSince: 900_000 });
+      expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).not.toContain("young"); // opMs 100k < 500k
     });
 
     it("leaves a recently-active session alone (idle <= timeout)", () => {
