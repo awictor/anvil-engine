@@ -7,8 +7,8 @@ describe("anvil-engine webhook callbacks", () => {
       expect(typeof fireWebhook).toBe("function");
     });
 
-    it("accepts event and sessionId parameters", () => {
-      expect(fireWebhook.length).toBe(2);
+    it("accepts event and sessionId parameters (+ optional detail, DEV-0168)", () => {
+      expect(fireWebhook.length).toBeGreaterThanOrEqual(2);
     });
 
     it("returns void (fire-and-forget)", () => {
@@ -21,6 +21,12 @@ describe("anvil-engine webhook callbacks", () => {
       expect(() => fireWebhook("session.released", "test-id")).not.toThrow();
       expect(() => fireWebhook("session.timed_out", "test-id")).not.toThrow();
       expect(() => fireWebhook("session.stuck", "test-id")).not.toThrow(); // DEV-0167
+    });
+
+    it("DEV-0168: accepts an optional detail payload without throwing", () => {
+      expect(() => fireWebhook("session.stuck", "test-id", { ageMs: 12345, inFlight: 2 })).not.toThrow();
+      // 2-arg call sites still work (detail optional)
+      expect(() => fireWebhook("session.created", "test-id")).not.toThrow();
     });
   });
 

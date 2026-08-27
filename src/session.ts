@@ -162,8 +162,9 @@ export class SessionManager {
           logger.warn("Session stuck — force-destroying with an operation still in flight", { sessionId: id, ageMs: now - session.createdAt, inFlight: session.inFlight });
           this.destroy(id);
           // Distinct event (DEV-0167): a hung-op force-kill is an anomaly to investigate, NOT the
-          // routine idle timeout below — a monitor must be able to tell them apart.
-          fireWebhook("session.stuck", id);
+          // routine idle timeout below — a monitor must be able to tell them apart. Carry the WHY
+          // (DEV-0168) so the alert is self-describing without a /v1/sessions call-back.
+          fireWebhook("session.stuck", id, { ageMs: now - session.createdAt, inFlight: session.inFlight });
           reaped.push(id);
         }
         continue;
