@@ -71,7 +71,7 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // that treat anvil as a dependency (relay, DataFaucet) otherwise read an expected page timeout as an
   // anvil OUTAGE and mis-alert / aggressively retry (DEV-0145; extends the DEV-0119/0120 taxonomy).
   const isTimeout = (err instanceof Error && err.name === "TimeoutError")
-    || /Timeout\s+\d+\s*ms\s+exceeded|TimeoutError/i.test(message);
+    || /Timeout\s+\d+\s*ms\s+exceeded|TimeoutError|timed out after \d+\s*ms/i.test(message);
   // A CDP/browser-crash disconnect (Target closed / Session closed / Protocol error / browser has
   // disconnected — the exact set in browser-helper's CRASH_PATTERNS, reused via isCrashError) is an
   // UPSTREAM failure (502 Bad Gateway), not an anvil bug (500), so a caller can tell a browser crash
@@ -82,11 +82,17 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // Many Requests), not a server fault (500) — a caller can retry after closing a tab. Keeps it out of
   // serverErrorsCount (5xx-only, DEV-0147) so a client hammering the cap can't fake an outage (DEV-0152).
   const isLimit = /limit reached/i.test(message);
+  // More client/state faults that must not read as anvil bugs (DEV-0153): an out-of-range page index
+  // is invalid client input (400); refusing to close the last remaining page is a state conflict (409).
+  const isBadInput = /out of range/i.test(message);
+  const isConflict = /Cannot close the last remaining/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
+    : isBadInput ? 400
     : isTimeout ? 504
     : isCrash ? 502
     : isLimit ? 429
+    : isConflict ? 409
     : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;

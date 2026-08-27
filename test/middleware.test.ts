@@ -150,4 +150,17 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     expect(errorToResponse(new Error("Target closed")).status).toBe(502);
     expect(errorToResponse(new Error("Session not found")).status).toBe(404);
   });
+
+  // DEV-0153: complete the actions.ts throw taxonomy.
+  it("maps out-of-range->400, last-remaining->409, script-timeout->504", () => {
+    expect(errorToResponse(new Error("Page index 9 out of range")).status).toBe(400);
+    expect(errorToResponse(new Error("Cannot close the last remaining page")).status).toBe(409);
+    expect(errorToResponse(new Error("Script execution timed out after 5000ms")).status).toBe(504);
+    // the widened timeout branch still catches the Playwright phrasing
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
+    // and doesn't swallow the existing classes
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Session not found")).status).toBe(404);
+    expect(errorToResponse(new Error("Page limit reached: 8/8")).status).toBe(429);
+  });
 });
