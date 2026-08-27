@@ -139,9 +139,9 @@ export class SessionManager {
 
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  startCleanup(timeoutMs: number): void {
-    if (timeoutMs <= 0) return;
-    this.cleanupTimer = setInterval(() => this.sweepIdle(Date.now(), timeoutMs), 30000);
+  startCleanup(timeoutMs: number, stuckMs = 0): void {
+    if (timeoutMs <= 0 && stuckMs <= 0) return;
+    this.cleanupTimer = setInterval(() => this.sweepIdle(Date.now(), timeoutMs, stuckMs), 30000);
   }
 
   /**
@@ -149,12 +149,24 @@ export class SessionManager {
    * FLIGHT is NOT idle — a long action (e.g. a slow scrape) only touches lastActivityAt at request
    * start, so without the inFlight guard the reaper would destroy() a busy session and force-kill the
    * browser under a running handler after the 5s drain (DEV-0156). Extracted for unit-testability.
-   * Returns the ids it reaped.
+   * `stuckMs > 0` adds a hard LAST-RESORT cap (DEV-0160): an inFlight session older than stuckMs is
+   * force-destroyed anyway — a genuinely hung op (wedged CDP socket below the per-op abort) would
+   * otherwise leak forever. Logged distinctly (`Session stuck`) so it's not confused with a normal idle
+   * timeout. Returns the ids it reaped.
    */
-  sweepIdle(now: number, timeoutMs: number): string[] {
+  sweepIdle(now: number, timeoutMs: number, stuckMs = 0): string[] {
     const reaped: string[] = [];
     for (const [id, session] of this.sessions) {
-      if (session.inFlight > 0) continue;
+      if (session.inFlight > 0) {
+        if (stuckMs > 0 && now - session.createdAt > stuckMs) {
+          logger.warn("Session stuck — force-destroying with an operation still in flight", { sessionId: id, ageMs: now - session.createdAt, inFlight: session.inFlight });
+          this.destroy(id);
+          fireWebhook("session.timed_out", id);
+          reaped.push(id);
+        }
+        continue;
+      }
+      if (timeoutMs <= 0) continue;
       const idleMs = now - session.lastActivityAt;
       if (idleMs > timeoutMs) {
         logger.info("Session timed out", { sessionId: id, idleMs });

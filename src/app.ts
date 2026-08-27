@@ -163,7 +163,7 @@ export function buildApp(config: Config): App {
           logger.info("Restored persisted sessions", { restored, failed });
         }
       }
-      sessionManager.startCleanup(config.sessionTimeoutMs);
+      sessionManager.startCleanup(config.sessionTimeoutMs, config.stuckSessionMs);
       if (rateLimiter) rateLimiter.startCleanup();
       metricsHeartbeat.start(); // no-op if ANVIL_METRICS_HEARTBEAT_MS=0 (default)
     },

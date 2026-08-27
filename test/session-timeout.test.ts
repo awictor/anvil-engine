@@ -178,6 +178,27 @@ describe("anvil-engine session timeout", () => {
       void s;
     });
 
+    it("DEV-0160: stuckMs disabled (0) — an inFlight stale session is NOT force-reaped", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "busy", createdAt: 0, lastActivityAt: 0, inFlight: 1 });
+      expect(mgr.sweepIdle(1_000_000, 300000, 0)).not.toContain("busy");
+      expect((mgr as any).sessions.has("busy")).toBe(true);
+    });
+
+    it("DEV-0160: stuckMs set + age exceeded — force-reaps despite inFlight", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "stuck", createdAt: 0, lastActivityAt: 999_999, inFlight: 2 });
+      // idle guard would keep it (idle ~0), but age (1_000_000) > stuckMs (500_000) forces destroy.
+      // sweepIdle returns the id as soon as it calls destroy() (destroy then drains inFlight itself).
+      expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).toContain("stuck");
+    });
+
+    it("DEV-0160: stuckMs set but age NOT exceeded — inFlight session survives", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "young", createdAt: 900_000, lastActivityAt: 0, inFlight: 1 });
+      expect(mgr.sweepIdle(1_000_000, 300000, 500_000)).not.toContain("young"); // age 100k < 500k
+    });
+
     it("leaves a recently-active session alone (idle <= timeout)", () => {
       const mgr = new SessionManager(fakePool);
       seed(mgr, { id: "fresh", lastActivityAt: 999_000, inFlight: 0 });

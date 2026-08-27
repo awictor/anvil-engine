@@ -13,6 +13,7 @@ export interface Config {
   navRetries: number;
   persistPath: string;
   metricsHeartbeatMs: number;
+  stuckSessionMs: number;
 }
 
 export class ConfigError extends Error {
@@ -61,6 +62,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const navRetries = numeric(env, { env: "ANVIL_NAV_RETRIES", fallback: 1, min: 0, max: 5 }, problems);
   // DEV-0112: wall-clock ops heartbeat period. 0 disables (default off — opt-in for a 24/7 deploy).
   const metricsHeartbeatMs = numeric(env, { env: "ANVIL_METRICS_HEARTBEAT_MS", fallback: 0, min: 0 }, problems);
+  // DEV-0160: hard stuck-session cap. A session with an op IN FLIGHT is un-reapable by the idle reaper
+  // (DEV-0156); if an op genuinely hangs (wedged CDP socket below the per-op abort) it would leak
+  // forever. When >0, sweepIdle force-destroys an inFlight session older than this. 0 = disabled (default).
+  const stuckSessionMs = numeric(env, { env: "ANVIL_STUCK_SESSION_MS", fallback: 0, min: 0 }, problems);
 
   const webhookUrl = env.ANVIL_WEBHOOK_URL || "";
   if (webhookUrl) {
@@ -91,5 +96,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     navRetries,
     persistPath: env.ANVIL_PERSIST_PATH || "",
     metricsHeartbeatMs,
+    stuckSessionMs,
   };
 }
