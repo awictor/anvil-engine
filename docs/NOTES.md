@@ -101,3 +101,18 @@ the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-
 - Metrics split (DEV-0147): `recordRequest` bumps `errorsCount` on every ≥400 but `serverErrorsCount`
   only on ≥500 — the latter is the true-outage signal the heartbeat/alerting keys off, so a burst of
   client 4xx (400/404/429) can't fake an outage.
+
+## Session lifecycle + leak visibility (`src/session.ts`)
+
+- One shared anvil serves BOTH relay + DataFaucet; a leaked/stuck session starves both, so lifecycle
+  correctness is load-bearing. Key invariants:
+- `inFlight` per session: `beginRequest`/`endRequest` bracket every browser op in `actions.ts run()`
+  (finally-decrement). `destroy()` drains inFlight (5s grace) before killing.
+- The idle reaper (`sweepIdle(now, timeoutMs)`, called every 30s by `startCleanup`) **skips any session
+  with `inFlight > 0`** (DEV-0156) — an in-flight op is NOT idle; without the guard a long action gets
+  its browser force-killed mid-flight. `sweepIdle` is extracted (returns reaped ids) so it's unit-testable
+  without timers/a real browser (seed `(mgr as any).sessions`, use a fake pool so `destroy` releases).
+- CONSEQUENCE: a session stuck at `inFlight>0` is now un-reapable, so it must be VISIBLE.
+  `lifecycleStats(now)` → `{inFlightTotal, oldestAgeMs, oldestIdleMs}` feeds `/v1/metrics`
+  (+ heartbeat `inFlightTotal`); `list()` rows carry per-session `idleMs`+`inFlight` for culprit triage.
+  A growing `inFlightTotal`/oldest-age is the early-warning BEFORE the pool starves.
