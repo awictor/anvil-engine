@@ -118,12 +118,17 @@ export class SessionManager {
     return count;
   }
 
-  list(): Array<{ id: string; status: string; cdpPort: number; ageMs: number }> {
+  list(): Array<{ id: string; status: string; cdpPort: number; ageMs: number; idleMs: number; inFlight: number }> {
+    const now = Date.now();
     return [...this.sessions.values()].map((s) => ({
       id: s.id,
       status: s.status,
       cdpPort: s.browserProcess.cdpPort,
-      ageMs: Date.now() - s.createdAt,
+      ageMs: now - s.createdAt,
+      // idleMs + inFlight let an operator pinpoint WHICH session is the leak culprit after
+      // /v1/metrics.inFlightTotal flags one exists — a stuck one has inFlight>0 and a large idleMs (DEV-0159).
+      idleMs: now - s.lastActivityAt,
+      inFlight: s.inFlight,
     }));
   }
 
