@@ -30,10 +30,16 @@ networkRoutes(stub).map(rt => `${rt.method} ${rt.pattern}`);  // assert exact se
 - `network` (har/intercept) → `test/network-contract.test.ts`
 - `contexts` + `pages` → `test/contexts-pages-contract.test.ts`
 - `recording` → `test/recording.test.ts`; `downloads` → `test/downloads.test.ts`
-- `sessions`/`actions`/`content`/`health` → `test/integration/server.test.ts` (boots real HTTP)
+- `sessions` → `test/sessions-contract.test.ts` (DEV-0170: routing shape + the 201 create-body key-set
+  {id,status,websocketUrl,cdpPort,createdAt} that relay anvil.ts:64 + mcp-forge both parse — the
+  highest-traffic consumer contract); `actions`/`content`/`health` also boot via `test/integration/server.test.ts`
+- `/v1/docs` CATALOG → `test/docs-count-drift.test.ts`: three guards, weak→strong — count (0171,
+  declared endpoints === registered route count), path-SET both-ways (0172, catches a missing/phantom
+  route), method+path TUPLE (0173, catches a verb flip GET↔POST on a shared path). LESSON: count-equality
+  is a weak invariant (0171's 38 hid 2 missing routes), set-equality catches contents, tuple catches verbs.
 
-So routing-shape is saturated: future anvil work should be behavior/feature/bugfix, not
-more shape tests.
+So routing-shape + the docs catalog are saturated + drift-guarded: future anvil work should be
+behavior/feature/bugfix, not more shape tests.
 
 ## Unit gate vs e2e (what the CI gate does NOT cover)
 
