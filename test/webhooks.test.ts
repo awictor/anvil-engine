@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { fireWebhook, type WebhookEvent } from "../src/webhooks.js";
+import { fireWebhook, buildWebhookPayload, type WebhookEvent } from "../src/webhooks.js";
+
+describe("buildWebhookPayload reserved-key precedence (DEV-0169)", () => {
+  it("merges detail but reserved event/sessionId/timestamp always win", () => {
+    const p = buildWebhookPayload("session.stuck", "sid-1", "2026-01-01T00:00:00.000Z", { ageMs: 999, inFlight: 2 });
+    expect(p).toEqual({ ageMs: 999, inFlight: 2, event: "session.stuck", sessionId: "sid-1", timestamp: "2026-01-01T00:00:00.000Z" });
+  });
+  it("a malicious/colliding detail key CANNOT clobber the reserved keys", () => {
+    const p = buildWebhookPayload("session.created", "real-id", "T", {
+      event: "evil", sessionId: "spoofed", timestamp: "hacked", ageMs: 5,
+    });
+    expect(p.event).toBe("session.created");
+    expect(p.sessionId).toBe("real-id");
+    expect(p.timestamp).toBe("T");
+    expect(p.ageMs).toBe(5); // non-reserved detail still passes through
+  });
+  it("no detail → just the three reserved keys", () => {
+    expect(buildWebhookPayload("session.released", "s", "T")).toEqual({ event: "session.released", sessionId: "s", timestamp: "T" });
+  });
+});
 
 describe("anvil-engine webhook callbacks", () => {
   describe("fireWebhook function", () => {
