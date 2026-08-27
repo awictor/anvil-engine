@@ -78,10 +78,15 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // apart from a server fault (DEV-0146; extends the DEV-0119/0120/0145 taxonomy). Ordered AFTER the
   // client-4xx and timeout branches so those still win.
   const isCrash = isCrashError(err);
+  // A per-session resource cap ("Page limit reached: N/CAP") is a CLIENT back-off condition (429 Too
+  // Many Requests), not a server fault (500) — a caller can retry after closing a tab. Keeps it out of
+  // serverErrorsCount (5xx-only, DEV-0147) so a client hammering the cap can't fake an outage (DEV-0152).
+  const isLimit = /limit reached/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
     : isTimeout ? 504
     : isCrash ? 502
+    : isLimit ? 429
     : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;

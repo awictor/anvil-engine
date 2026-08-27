@@ -140,4 +140,14 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     expect(errorToResponse(new Error("boom")).status).toBe(500);
     expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
   });
+
+  // DEV-0152: a per-session tab-cap is a client back-off (429), not a server fault (500).
+  it("maps a page-limit throw -> 429 (not 500)", () => {
+    expect(errorToResponse(new Error("Page limit reached: this session already has 8/8 pages open")).status).toBe(429);
+    expect(errorToResponse(new Error("Page limit reached: this session already has 8/8 pages open")).body.error).toMatch(/limit reached/);
+    // other classes unaffected
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Target closed")).status).toBe(502);
+    expect(errorToResponse(new Error("Session not found")).status).toBe(404);
+  });
 });
