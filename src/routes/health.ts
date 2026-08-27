@@ -52,6 +52,7 @@ export function healthRoutes(deps: Deps): Route[] {
       method: "GET",
       pattern: "/v1/metrics",
       handler: ({ res }) => {
+        const life = sessionManager.lifecycleStats(Date.now());
         json(res, 200, {
           ...metrics,
           activeSessions: sessionManager.size,
@@ -60,6 +61,11 @@ export function healthRoutes(deps: Deps): Route[] {
           maxSessions: config.maxSessions,
           poolSize: config.poolSize,
           poolAvailable: pool ? pool.available : 0,
+          // Lifecycle leak signals (DEV-0158): a session stuck at inFlight>0 is un-reapable, and a
+          // growing oldest-age/idle is an early starvation warning before the pool runs dry.
+          inFlightTotal: life.inFlightTotal,
+          oldestSessionAgeMs: life.oldestAgeMs,
+          oldestSessionIdleMs: life.oldestIdleMs,
           uptime: process.uptime(),
           endpoints: snapshot(),
         });

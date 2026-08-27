@@ -171,4 +171,19 @@ export class SessionManager {
   get size(): number {
     return this.sessions.size;
   }
+
+  /**
+   * Aggregate lifecycle signals for observability (DEV-0158). inFlightTotal = sum of in-flight ops
+   * across sessions (a session stuck >0 is un-reapable since DEV-0156, so this is the leak signal);
+   * oldestAgeMs = age of the oldest session; oldestIdleMs = longest idle time. All 0 when no sessions.
+   */
+  lifecycleStats(now: number): { inFlightTotal: number; oldestAgeMs: number; oldestIdleMs: number } {
+    let inFlightTotal = 0, oldestAgeMs = 0, oldestIdleMs = 0;
+    for (const s of this.sessions.values()) {
+      inFlightTotal += s.inFlight;
+      oldestAgeMs = Math.max(oldestAgeMs, now - s.createdAt);
+      oldestIdleMs = Math.max(oldestIdleMs, now - s.lastActivityAt);
+    }
+    return { inFlightTotal, oldestAgeMs, oldestIdleMs };
+  }
 }

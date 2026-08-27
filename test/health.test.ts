@@ -35,10 +35,13 @@ function mkRes() {
   };
 }
 
-// deps: only sessionManager.size, pool.available, config.sessionTimeoutMs are read by healthRoutes.
+// deps: sessionManager.size + lifecycleStats, pool.available, config.sessionTimeoutMs are read.
 function fakeDeps(opts: { size?: number; pool?: { available: number } | null }) {
   return {
-    sessionManager: { size: opts.size ?? 0 },
+    sessionManager: {
+      size: opts.size ?? 0,
+      lifecycleStats: () => ({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0 }),
+    },
     pool: opts.pool === undefined ? null : opts.pool,
     config: { sessionTimeoutMs: 300000, maxSessions: 10, poolSize: 2 },
   } as any;

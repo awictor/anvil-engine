@@ -184,6 +184,21 @@ describe("anvil-engine session timeout", () => {
       expect(mgr.sweepIdle(1_000_000, 300000)).not.toContain("fresh"); // 1000ms idle < 300000
     });
 
+    it("DEV-0158: lifecycleStats sums inFlight and reports the oldest age/idle", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "a", createdAt: 100_000, lastActivityAt: 900_000, inFlight: 2 });
+      seed(mgr, { id: "b", createdAt: 500_000, lastActivityAt: 500_000, inFlight: 1 });
+      const st = mgr.lifecycleStats(1_000_000);
+      expect(st.inFlightTotal).toBe(3);            // 2 + 1
+      expect(st.oldestAgeMs).toBe(900_000);        // now - min(createdAt) = 1_000_000 - 100_000
+      expect(st.oldestIdleMs).toBe(500_000);       // now - min(lastActivityAt) = 1_000_000 - 500_000
+    });
+
+    it("DEV-0158: lifecycleStats is all-zero with no sessions", () => {
+      const mgr = new SessionManager(fakePool);
+      expect(mgr.lifecycleStats(1_000_000)).toEqual({ inFlightTotal: 0, oldestAgeMs: 0, oldestIdleMs: 0 });
+    });
+
     it("returns a reaped session's browser to the pool (no starvation)", async () => {
       // The whole point of the reaper on a shared box: a leaked/idle session must give its browser
       // BACK to the pool, else the pool starves both consumers. Assert destroy() releases it.

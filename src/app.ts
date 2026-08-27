@@ -132,6 +132,7 @@ export function buildApp(config: Config): App {
       serverErrorsCount: counters.serverErrorsCount, // 5xx-only; the real-outage signal (DEV-0147)
       sessionsCreated: counters.sessionsCreated,
       peakConcurrent: counters.peakConcurrent,
+      inFlightTotal: sessionManager.lifecycleStats(Date.now()).inFlightTotal, // leak signal (DEV-0158)
     }),
     onError: () => {},
   });
