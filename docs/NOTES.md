@@ -97,13 +97,21 @@ the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-
 - The app-wide catch (`app.ts`) funnels every thrown handler error through `errorToResponse(err)` →
   `{ status, body }`. This is the CONTRACT callers (relay, DataFaucet) key retry/alerting off, so keep
   it exhaustive: one status per real failure class, and never let a 5xx swallow a client fault.
-- Mapping, in ternary order (client-4xx first, then upstream 5xx, then generic): bad JSON body → **400**;
-  `Blocked protocol/URL` → **400**; Playwright timeout (`TimeoutError` / `Timeout <n>ms exceeded`) →
-  **504**; browser-crash disconnect (reuses `isCrashError`/`CRASH_PATTERNS`) → **502**; `too large` →
-  **413**; `not found` → **404**; else → **500**. (client caps like `Page limit reached` should be **429**.)
-- WHY it matters: a blanket 500 for an EXPECTED browser event (page timeout, crash, tab-cap) reads as an
-  anvil OUTAGE to a dependent caller and triggers false alerts / aggressive retries. Pin every phrase +
-  a negative (generic stays 500) in `middleware.test.ts` when editing.
+- Mapping, in ternary order (client-4xx first, then upstream 5xx, then generic). CLIENT 4xx: bad JSON
+  body → **400** (DEV-0119); `Blocked protocol/URL` → **400** (DEV-0120, SSRF); page index `out of range`
+  → **400** (DEV-0153); bad proxy — `Unsupported proxy scheme` / `is private or internal and not allowed`
+  (launcher.validateProxyUrl, SSRF host-guard) → **400** (DEV-0181); `Cannot close the last remaining`
+  page → **409** conflict (DEV-0153); `limit reached` (per-session tab cap) → **429** (DEV-0152). UPSTREAM
+  5xx: Playwright timeout (`TimeoutError` / `Timeout <n>ms exceeded` / `timed out after <n>ms`) → **504**
+  (DEV-0145); browser-crash disconnect (reuses `isCrashError`/`CRASH_PATTERNS`) → **502** (DEV-0146);
+  `Chrome CDP did not start on port <p> within <t>ms` (transient launch-capacity, launcher.ts:233) →
+  **503** retry-later (DEV-0182, PENDING). SIZE/EXISTENCE: `too large` → **413**; `not found` → **404**.
+  Else → **500**.
+- WHY it matters: a blanket 500 for an EXPECTED browser event (page timeout, crash, tab-cap, bad proxy,
+  launch blip) reads as an anvil OUTAGE to a dependent caller and triggers false alerts / aggressive
+  retries. Pin every REAL throw phrase (read the actual `src/*.ts` literal, DEV-0154 style) + a negative
+  (generic stays 500) in `middleware.test.ts` when editing — a reworded throw must fail CI, not silently
+  revert to 500.
 - Metrics split (DEV-0147): `recordRequest` bumps `errorsCount` on every ≥400 but `serverErrorsCount`
   only on ≥500 — the latter is the true-outage signal the heartbeat/alerting keys off, so a burst of
   client 4xx (400/404/429) can't fake an outage.
