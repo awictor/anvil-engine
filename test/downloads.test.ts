@@ -280,10 +280,22 @@ describe("downloadRoutes handlers (DEV-0048 route layer)", () => {
     await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "report.pdf" }, requestId: "t" });
     await r.done;
     expect(r.status).toBe(200);
-    expect(r.headers["Content-Disposition"]).toBe('attachment; filename="report.pdf"');
+    // DEV-0190: RFC 5987 form — ASCII fallback + filename*; still names report.pdf, header-injection-safe.
+    expect(r.headers["Content-Disposition"]).toBe(`attachment; filename="report.pdf"; filename*=UTF-8''report.pdf`);
     expect(r.headers["Content-Type"]).toBe("application/pdf"); // DEV-0047 wiring, not octet-stream
     expect(r.headers["Content-Length"]).toBe("2048");
     expect(r.body.length).toBe(2048);
+  });
+
+  it("DEV-0190: serves a real download with spaces/parens (was 400'd by the old strict allowlist)", async () => {
+    writeFileSync(join(dir, "invoice (1).pdf"), Buffer.alloc(512));
+    const route = getRoute(fakeDeps(dir));
+    const r = mkRes();
+    await route.handler({ req, res: r.res, url: mkUrl(), params: { filename: "invoice (1).pdf" }, requestId: "t" });
+    await r.done;
+    expect(r.status).toBe(200);
+    expect(r.headers["Content-Disposition"]).toContain(`filename*=UTF-8''invoice%20(1).pdf`);
+    expect(r.body.length).toBe(512);
   });
 
   it("unknown extension falls back to octet-stream on a real file", async () => {

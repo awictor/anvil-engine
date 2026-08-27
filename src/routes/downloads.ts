@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { type Route } from "../router.js";
 import { type Deps } from "./deps.js";
 import { json, resolveSession } from "../http-utils.js";
-import { safeJoin } from "../path-safety.js";
+import { safeJoin, contentDispositionAttachment } from "../path-safety.js";
 
 // DEV-0047: map a downloaded file's extension to a Content-Type so a client can preview/route it
 // (a captured .pdf/.png previously downloaded as an opaque application/octet-stream blob). Pure +
@@ -74,7 +74,9 @@ export function downloadRoutes(deps: Deps): Route[] {
           const st = statSync(filePath);
           res.writeHead(200, {
             "Content-Type": contentTypeFor(filename),
-            "Content-Disposition": `attachment; filename="${filename}"`,
+            // DEV-0190: RFC 5987 encode — never interpolate the raw filename into the header (a quote
+            // or CR/LF would inject headers; safeJoin already blocks those, this is defense-in-depth).
+            "Content-Disposition": contentDispositionAttachment(filename),
             "Content-Length": st.size.toString(),
           });
           createReadStream(filePath).pipe(res);
