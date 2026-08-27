@@ -151,6 +151,40 @@ describe("anvil-engine session timeout", () => {
     });
   });
 
+  describe("sweepIdle in-flight guard (DEV-0156)", () => {
+    // A fake pool so destroy() releases instead of killing a real browser process.
+    const fakePool = { acquire: async () => ({}), release: () => {}, available: 1 } as any;
+    const seed = (mgr: SessionManager, over: Partial<any>) => {
+      const s = { id: over.id, status: "live", browserProcess: { downloadDir: "" }, createdAt: 0, lastActivityAt: 0, options: {}, inFlight: 0, destroying: false, ...over };
+      (mgr as any).sessions.set(s.id, s);
+      return s;
+    };
+
+    it("does NOT reap a stale session while an operation is in flight", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "busy", lastActivityAt: 0, inFlight: 1 });
+      const reaped = mgr.sweepIdle(1_000_000, 300000); // way past timeout
+      expect(reaped).not.toContain("busy");
+      expect((mgr as any).sessions.has("busy")).toBe(true);
+    });
+
+    it("reaps a stale session once no operation is in flight", () => {
+      const mgr = new SessionManager(fakePool);
+      const s = seed(mgr, { id: "idle", lastActivityAt: 0, inFlight: 0 });
+      expect(mgr.sweepIdle(1_000_000, 300000)).toContain("idle");
+      // now prove the guard flips with inFlight: a fresh busy one survives the same sweep
+      seed(mgr, { id: "busy2", lastActivityAt: 0, inFlight: 2 });
+      expect(mgr.sweepIdle(1_000_000, 300000)).not.toContain("busy2");
+      void s;
+    });
+
+    it("leaves a recently-active session alone (idle <= timeout)", () => {
+      const mgr = new SessionManager(fakePool);
+      seed(mgr, { id: "fresh", lastActivityAt: 999_000, inFlight: 0 });
+      expect(mgr.sweepIdle(1_000_000, 300000)).not.toContain("fresh"); // 1000ms idle < 300000
+    });
+  });
+
   describe("cleanup interval behavior", () => {
     it("interval runs every 30 seconds (30000ms)", () => {
       const CLEANUP_INTERVAL = 30000;

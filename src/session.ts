@@ -136,17 +136,29 @@ export class SessionManager {
 
   startCleanup(timeoutMs: number): void {
     if (timeoutMs <= 0) return;
-    this.cleanupTimer = setInterval(() => {
-      const now = Date.now();
-      for (const [id, session] of this.sessions) {
-        const idleMs = now - session.lastActivityAt;
-        if (idleMs > timeoutMs) {
-          logger.info("Session timed out", { sessionId: id, idleMs });
-          this.destroy(id);
-          fireWebhook("session.timed_out", id);
-        }
+    this.cleanupTimer = setInterval(() => this.sweepIdle(Date.now(), timeoutMs), 30000);
+  }
+
+  /**
+   * One reaper pass: destroy sessions idle longer than timeoutMs. A session with an operation IN
+   * FLIGHT is NOT idle — a long action (e.g. a slow scrape) only touches lastActivityAt at request
+   * start, so without the inFlight guard the reaper would destroy() a busy session and force-kill the
+   * browser under a running handler after the 5s drain (DEV-0156). Extracted for unit-testability.
+   * Returns the ids it reaped.
+   */
+  sweepIdle(now: number, timeoutMs: number): string[] {
+    const reaped: string[] = [];
+    for (const [id, session] of this.sessions) {
+      if (session.inFlight > 0) continue;
+      const idleMs = now - session.lastActivityAt;
+      if (idleMs > timeoutMs) {
+        logger.info("Session timed out", { sessionId: id, idleMs });
+        this.destroy(id);
+        fireWebhook("session.timed_out", id);
+        reaped.push(id);
       }
-    }, 30000);
+    }
+    return reaped;
   }
 
   stopCleanup(): void {
