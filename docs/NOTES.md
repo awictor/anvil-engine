@@ -115,6 +115,16 @@ the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-
 - Metrics split (DEV-0147): `recordRequest` bumps `errorsCount` on every ≥400 but `serverErrorsCount`
   only on ≥500 — the latter is the true-outage signal the heartbeat/alerting keys off, so a burst of
   client 4xx (400/404/429) can't fake an outage.
+- AUDIT METHOD (learned DEV-0186): the taxonomy audit must `grep -rn "throw new Error" src/` across
+  EVERY file, not just launcher/actions — `pool.ts:32` ("Browser launch timed out after **30s**") was
+  missed because it lives in pool AND is worded in seconds, so `isTimeout` (which needs `<n>ms`) skips
+  it → it fell to 500 (DEV-0186 extends `isUnavailable` to catch it → 503). Full throw inventory +
+  intended status (classify each against the matchers before declaring "complete"): actions.ts crash-
+  reconnect→502, Session/Context/Element not found→404, Blocked protocol→400, page-limit→429, out-of-
+  range→400, last-page→409, script `timed out after <n>ms`→504; browser-helper crash→502; launcher
+  unsupported-proxy/private-host→400, `Chrome CDP did not start … within <n>ms`→503, pool `Browser
+  launch timed out after 30s`→503 (0186). CORRECTLY-500 (real anvil faults, NOT gaps): launcher.ts:56
+  `Chrome not found. Set CHROME_PATH…` (misconfig) and client.ts:39 `HTTP <status>` (internal client).
 
 ## Session lifecycle + leak visibility (`src/session.ts`)
 
