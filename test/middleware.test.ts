@@ -193,4 +193,24 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
       expect(errorToResponse(new Error(msg)).status, phrase).toBe(status);
     }
   });
+
+  // DEV-0181: a bad proxy on session create (unsupported scheme / private-host SSRF reject) throws from
+  // launcher.validateProxyUrl and bubbles to the app.ts central catch → errorToResponse. Both are CLIENT
+  // faults (400), not a blanket 500 that mis-signals an anvil outage + pollutes serverErrorsCount. Map
+  // both, and pin the REAL launcher.ts throw literals so a reworded message can't silently revert to 500.
+  it("maps a bad-proxy throw -> 400 (unsupported scheme + private-host SSRF)", () => {
+    // representative real messages
+    expect(errorToResponse(new Error("Unsupported proxy scheme: ftp: (allowed: http, https, socks, socks4, socks5)")).status).toBe(400);
+    expect(errorToResponse(new Error('Proxy host "10.0.0.1" is private or internal and not allowed. Set ANVIL_ALLOW_PRIVATE_PROXY=true to override.')).status).toBe(400);
+    // message passthrough preserved (not the JSON-specific body)
+    expect(errorToResponse(new Error("Unsupported proxy scheme: ftp:")).body.error).toMatch(/Unsupported proxy scheme/);
+    // other classes unaffected
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Target closed")).status).toBe(502);
+    expect(errorToResponse(new Error("Session not found")).status).toBe(404);
+    // regression guard: the ACTUAL launcher.ts throw literals still classify as intended
+    const src = readFileSync(join(process.cwd(), "src", "launcher.ts"), "utf8");
+    expect(src.includes("Unsupported proxy scheme"), "launcher.ts no longer throws 'Unsupported proxy scheme'").toBe(true);
+    expect(src.includes("is private or internal and not allowed"), "launcher.ts no longer throws the private-host reject").toBe(true);
+  });
 });

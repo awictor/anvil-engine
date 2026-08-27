@@ -86,9 +86,16 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // is invalid client input (400); refusing to close the last remaining page is a state conflict (409).
   const isBadInput = /out of range/i.test(message);
   const isConflict = /Cannot close the last remaining/i.test(message);
+  // A bad proxy on session create is a CLIENT fault, not an anvil bug (DEV-0181): an unsupported proxy
+  // scheme is invalid input, and a private/internal proxy host is an SSRF-style rejection — both throw
+  // from launcher.validateProxyUrl and otherwise bubble to a blanket 500 (mis-signalling an outage +
+  // polluting serverErrorsCount). Map both to 400, in the client-4xx group.
+  const isBadProxy = /^Unsupported proxy scheme/i.test(message)
+    || /is private or internal and not allowed/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
     : isBadInput ? 400
+    : isBadProxy ? 400
     : isTimeout ? 504
     : isCrash ? 502
     : isLimit ? 429
