@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { type RateLimiter } from "./rate-limiter.js";
 import { json } from "./http-utils.js";
+import { isCrashError } from "./browser-helper.js";
 
 /**
  * Middleware returns true to continue the chain, false when it has already
@@ -71,9 +72,16 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // anvil OUTAGE and mis-alert / aggressively retry (DEV-0145; extends the DEV-0119/0120 taxonomy).
   const isTimeout = (err instanceof Error && err.name === "TimeoutError")
     || /Timeout\s+\d+\s*ms\s+exceeded|TimeoutError/i.test(message);
+  // A CDP/browser-crash disconnect (Target closed / Session closed / Protocol error / browser has
+  // disconnected — the exact set in browser-helper's CRASH_PATTERNS, reused via isCrashError) is an
+  // UPSTREAM failure (502 Bad Gateway), not an anvil bug (500), so a caller can tell a browser crash
+  // apart from a server fault (DEV-0146; extends the DEV-0119/0120/0145 taxonomy). Ordered AFTER the
+  // client-4xx and timeout branches so those still win.
+  const isCrash = isCrashError(err);
   const status = isBadJson ? 400
     : isBlocked ? 400
     : isTimeout ? 504
+    : isCrash ? 502
     : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;

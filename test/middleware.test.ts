@@ -127,4 +127,17 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     // a generic error is still 500 (timeout branch didn't widen)
     expect(errorToResponse(new Error("boom")).status).toBe(500);
   });
+
+  // DEV-0146: a CDP/browser-crash disconnect is an upstream failure (502), not an anvil bug (500),
+  // reusing browser-helper's CRASH_PATTERNS via isCrashError.
+  it("maps a browser-crash disconnect -> 502 (not 500)", () => {
+    for (const msg of ["Target closed", "Session closed", "Protocol error (Runtime.evaluate): Target closed", "browser has disconnected"]) {
+      expect(errorToResponse(new Error(msg)).status, msg).toBe(502);
+    }
+    // message passthrough preserved
+    expect(errorToResponse(new Error("Target closed")).body.error).toMatch(/Target closed/);
+    // still-500 generic and still-504 timeout unaffected by the new branch
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
+  });
 });
