@@ -44,7 +44,7 @@ export function contentRoutes(deps: Deps): Route[] {
         const { session, error } = resolveSession(sessionManager, req, url);
         if (error) { json(res, error.status, error.body); return; }
 
-        const pdf = await actions.pdf(session, { url: body.url, format: body.format, landscape: body.landscape });
+        const pdf = await actions.pdf(session, { url: body.url, format: body.format, landscape: body.landscape, waitUntil: body.waitUntil, timeout: body.timeout });
         res.writeHead(200, { "Content-Type": "application/pdf" });
         res.end(pdf);
       },

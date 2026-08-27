@@ -80,6 +80,18 @@ export function normalizePdfFormat(format: string | undefined, def = "A4"): stri
   return PDF_FORMATS.has(format.trim().toLowerCase()) ? format.trim() : def;
 }
 
+// PURE (DEV-0132): build a page.goto() options object from a caller's optional waitUntil/timeout.
+// A caller can pass a faster strategy ("domcontentloaded") or a shorter timeout so a polling page
+// (never network-idle) can't burn the full default. timeout is clamped to (0, 60000] — a 0/absent
+// or out-of-range value falls back to `defTimeout`; waitUntil defaults to "networkidle2". Same
+// clamp semantics as navigate() (actions.ts). Returned type matches Puppeteer's GoToOptions shape.
+const WAIT_UNTIL = new Set(["load", "domcontentloaded", "networkidle0", "networkidle2"]);
+export function gotoOpts(waitUntil?: string, timeout?: number, defTimeout = 60000): { waitUntil: "networkidle2"; timeout: number } {
+  const wu = typeof waitUntil === "string" && WAIT_UNTIL.has(waitUntil) ? waitUntil : "networkidle2";
+  const t = typeof timeout === "number" && Number.isFinite(timeout) && timeout > 0 ? Math.min(timeout, 60000) : defTimeout;
+  return { waitUntil: wu as "networkidle2", timeout: t };
+}
+
 export interface ActionEntry {
   action: string;
   params: Record<string, unknown>;
@@ -278,11 +290,14 @@ export class SessionActions {
     }, "scrape");
   }
 
-  async pdf(session: Session, params: { url?: string; format?: string; landscape?: boolean }): Promise<Uint8Array> {
+  async pdf(session: Session, params: { url?: string; format?: string; landscape?: boolean; waitUntil?: string; timeout?: number }): Promise<Uint8Array> {
     return this.run(session, async (page) => {
       await this.authenticated(session, page);
       if (params.url) {
-        await page.goto(params.url, { waitUntil: "networkidle2", timeout: 60000 });
+        // DEV-0132: allow the caller to pick a faster wait strategy / shorter timeout so a
+        // polling page (HN etc, never network-idle) can't burn the full 60s. Default is the
+        // prior networkidle2/60000, so an existing caller sees no change. Clamp mirrors navigate().
+        await page.goto(params.url, gotoOpts(params.waitUntil, params.timeout));
       }
       return page.pdf({
         format: normalizePdfFormat(params.format) as "a4",
