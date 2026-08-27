@@ -409,11 +409,13 @@ export class SessionActions {
     return pages[0] || (await context.newPage());
   }
 
-  async navigateInContext(session: Session, contextId: string, url: string): Promise<{ url: string; title: string }> {
+  async navigateInContext(session: Session, contextId: string, url: string, opts?: { waitUntil?: string; timeout?: number }): Promise<{ url: string; title: string }> {
     if (/^(file|javascript|data):/i.test(url)) throw new Error("Blocked protocol: only http/https allowed");
     return this.run(session, async () => {
       const page = await this.contextPage(session, contextId);
-      await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+      // DEV-0134: last goto to gain the gotoOpts guard (after pdf DEV-0132, scrape DEV-0133) — a
+      // multi-context nav on a polling page can't burn the full 60s. Default networkidle2/60000 kept.
+      await page.goto(url, gotoOpts(opts?.waitUntil, opts?.timeout));
       return { url: page.url(), title: await page.title() };
     });
   }
