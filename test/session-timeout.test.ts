@@ -183,6 +183,21 @@ describe("anvil-engine session timeout", () => {
       seed(mgr, { id: "fresh", lastActivityAt: 999_000, inFlight: 0 });
       expect(mgr.sweepIdle(1_000_000, 300000)).not.toContain("fresh"); // 1000ms idle < 300000
     });
+
+    it("returns a reaped session's browser to the pool (no starvation)", async () => {
+      // The whole point of the reaper on a shared box: a leaked/idle session must give its browser
+      // BACK to the pool, else the pool starves both consumers. Assert destroy() releases it.
+      const released: any[] = [];
+      const pool = { acquire: async () => ({}), release: (p: any) => released.push(p), available: 1 } as any;
+      const mgr = new SessionManager(pool);
+      const proc = { downloadDir: "", cdpPort: 1234 };
+      seed(mgr, { id: "leaked", lastActivityAt: 0, inFlight: 0, browserProcess: proc });
+      mgr.sweepIdle(1_000_000, 300000);
+      // destroy() drains (no in-flight) then releases synchronously in the no-drain path
+      await new Promise((r) => setTimeout(r, 10));
+      expect(released).toContain(proc);
+      expect((mgr as any).sessions.has("leaked")).toBe(false);
+    });
   });
 
   describe("cleanup interval behavior", () => {
