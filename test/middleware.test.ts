@@ -228,4 +228,19 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     const src = readFileSync(join(process.cwd(), "src", "launcher.ts"), "utf8");
     expect(src.includes("Chrome CDP did not start on port"), "launcher.ts no longer throws the CDP-start-timeout").toBe(true);
   });
+
+  // DEV-0186: the pool's acquire-race cap ("Browser launch timed out after 30s") is the SAME transient
+  // launch-capacity class as the CDP-launch timeout, but worded in seconds — isTimeout (needs <n>ms)
+  // skips it, so without a dedicated branch it fell to a blanket 500. Must be 503.
+  it("maps a pool acquire launch-timeout -> 503 (worded in seconds, not ms)", () => {
+    expect(errorToResponse(new Error("Browser launch timed out after 30s")).status).toBe(503);
+    expect(errorToResponse(new Error("Browser launch timed out after 30s")).body.error).toMatch(/Browser launch timed out/);
+    // still distinct: a Playwright ms-timeout stays 504, generic stays 500, CDP-launch stays 503
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Chrome CDP did not start on port 9222 within 10000ms")).status).toBe(503);
+    // regression guard: the ACTUAL pool.ts throw literal still classifies as intended
+    const poolSrc = readFileSync(join(process.cwd(), "src", "pool.ts"), "utf8");
+    expect(poolSrc.includes("Browser launch timed out after"), "pool.ts no longer throws the acquire launch-timeout").toBe(true);
+  });
 });

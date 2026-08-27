@@ -92,12 +92,16 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // polluting serverErrorsCount). Map both to 400, in the client-4xx group.
   const isBadProxy = /^Unsupported proxy scheme/i.test(message)
     || /is private or internal and not allowed/i.test(message);
-  // A Chrome/CDP launch that never exposed its debug endpoint in the window ("Chrome CDP did not start
-  // on port <p> within <t>ms", launcher.ts:233) is a TRANSIENT launch-capacity failure, not a code bug:
-  // 503 Service Unavailable is the standard retry-later signal (DEV-0182). It is still a 5xx (a real
-  // server-side failure, so it DOES count in serverErrorsCount) but distinct from a 500 code fault, and
-  // a caller can safely retry. Ordered after the client-4xx + timeout/crash branches.
-  const isUnavailable = /Chrome CDP did not start on port .* within/i.test(message);
+  // A TRANSIENT launch-capacity failure — the browser never came up in time — is not a code bug:
+  // 503 Service Unavailable is the standard retry-later signal. Two phrasings, both here (DEV-0182 +
+  // DEV-0186): the CDP endpoint never appeared ("Chrome CDP did not start on port <p> within <t>ms",
+  // launcher.ts:233), OR the pool's acquire race capped out ("Browser launch timed out after 30s",
+  // pool.ts:32 — note it says "30s" not "<n>ms", so isTimeout above does NOT catch it and it would
+  // otherwise fall to a blanket 500). Still a 5xx (real server-side failure, counts in
+  // serverErrorsCount) but distinct from a 500 code fault, and a caller can safely retry. After the
+  // client-4xx + Playwright-timeout/crash branches.
+  const isUnavailable = /Chrome CDP did not start on port .* within/i.test(message)
+    || /Browser launch timed out after/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
     : isBadInput ? 400
