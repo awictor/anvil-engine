@@ -129,6 +129,7 @@ export function buildApp(config: Config): App {
       poolAvailable: pool ? pool.available : null,
       requestsServed: counters.requestsServed,
       errorsCount: counters.errorsCount,
+      serverErrorsCount: counters.serverErrorsCount, // 5xx-only; the real-outage signal (DEV-0147)
       sessionsCreated: counters.sessionsCreated,
       peakConcurrent: counters.peakConcurrent,
     }),

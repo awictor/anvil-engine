@@ -13,6 +13,10 @@ export const counters = {
   peakConcurrent: 0,
   requestsServed: 0,
   errorsCount: 0,
+  // errorsCount counts ALL >=400 (incl. client 4xx) and is kept for back-compat. serverErrorsCount
+  // counts ONLY real anvil faults (>=500), so ops alerting keys off true outages and a burst of client
+  // 400s (badJson/blocked/not-found from the DEV-0119/0120/0145/0146 taxonomy) can't fake one (DEV-0147).
+  serverErrorsCount: 0,
   webhooksFailed: 0,
 };
 
@@ -39,6 +43,7 @@ export function normalizeRoute(method: string, pathname: string): string {
 export function recordRequest(method: string, pathname: string, status: number, durationMs: number): void {
   counters.requestsServed++;
   if (status >= 400) counters.errorsCount++;
+  if (status >= 500) counters.serverErrorsCount++;
 
   const key = normalizeRoute(method, pathname);
   let h = histograms.get(key);

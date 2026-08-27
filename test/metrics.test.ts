@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { normalizeRoute, recordRequest, snapshot, resetForTests } from "../src/metrics.js";
+import { normalizeRoute, recordRequest, snapshot, resetForTests, counters } from "../src/metrics.js";
 
 describe("normalizeRoute (histogram cardinality)", () => {
   it("collapses session id, release, and download param routes", () => {
@@ -101,6 +101,22 @@ describe("anvil-engine metrics endpoint", () => {
       const statusCode = 200;
       const isError = statusCode >= 400;
       expect(isError).toBe(false);
+    });
+
+    it("DEV-0147: serverErrorsCount counts 5xx ONLY; errorsCount still counts all >=400", () => {
+      resetForTests();
+      recordRequest("GET", "/v1/live", 200, 1);   // ok
+      recordRequest("POST", "/v1/actions/navigate", 400, 1); // client fault
+      recordRequest("GET", "/v1/pages/0", 404, 1); // client fault
+      recordRequest("POST", "/v1/actions/click", 504, 1); // upstream timeout (server-class)
+      recordRequest("POST", "/v1/actions/eval", 502, 1);  // browser crash (server-class)
+      recordRequest("GET", "/v1/sessions/x", 500, 1);     // anvil fault
+      // errorsCount = all >=400 = 400,404,504,502,500 = 5
+      expect(counters.errorsCount).toBe(5);
+      // serverErrorsCount = >=500 only = 504,502,500 = 3 (client 400/404 excluded)
+      expect(counters.serverErrorsCount).toBe(3);
+      expect(counters.requestsServed).toBe(6);
+      resetForTests();
     });
 
     it("peakConcurrent uses Math.max pattern", () => {
