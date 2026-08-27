@@ -65,8 +65,15 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // pre-guard inline and return 400, but the contexts navigate path lets actions.* throw it — map it
   // here so it's a 400 everywhere (DEV-0120).
   const isBlocked = /^Blocked (protocol|URL)/i.test(message);
+  // A Playwright/CDP timeout (navigation or selector wait) means the UPSTREAM browser didn't reach the
+  // expected state in time — that's a gateway timeout (504), not an anvil server fault (500). Callers
+  // that treat anvil as a dependency (relay, DataFaucet) otherwise read an expected page timeout as an
+  // anvil OUTAGE and mis-alert / aggressively retry (DEV-0145; extends the DEV-0119/0120 taxonomy).
+  const isTimeout = (err instanceof Error && err.name === "TimeoutError")
+    || /Timeout\s+\d+\s*ms\s+exceeded|TimeoutError/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
+    : isTimeout ? 504
     : message.includes("too large") ? 413
     : message.includes("not found") || message.includes("Not found") ? 404
     : 500;

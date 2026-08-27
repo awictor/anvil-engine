@@ -111,4 +111,20 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     // message passthrough preserved for these (not the JSON placeholder)
     expect(errorToResponse(new Error("Blocked protocol: only http/https allowed")).body.error).toMatch(/Blocked protocol/);
   });
+
+  // DEV-0145: a Playwright/CDP timeout is an upstream-browser gateway timeout (504), not an anvil
+  // fault (500), so a caller (relay/DataFaucet) doesn't read an expected page timeout as an outage.
+  it("maps a Playwright timeout -> 504 (not 500)", () => {
+    // by message shape ("Timeout 30000ms exceeded")
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
+    expect(errorToResponse(new Error("page.waitForSelector: Timeout 5000 ms exceeded")).status).toBe(504);
+    // by error name (Playwright throws TimeoutError)
+    const te = new Error("waiting for selector failed");
+    te.name = "TimeoutError";
+    expect(errorToResponse(te).status).toBe(504);
+    // message passthrough preserved
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).body.error).toMatch(/Timeout/);
+    // a generic error is still 500 (timeout branch didn't widen)
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+  });
 });
