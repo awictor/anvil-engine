@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { corsMiddleware, rateLimitMiddleware, authMiddleware, errorToResponse, EXEMPT_PATHS } from "../src/middleware.js";
 import type { RateLimiter } from "../src/rate-limiter.js";
@@ -162,5 +164,33 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     expect(errorToResponse(new Error("boom")).status).toBe(500);
     expect(errorToResponse(new Error("Session not found")).status).toBe(404);
     expect(errorToResponse(new Error("Page limit reached: 8/8")).status).toBe(429);
+  });
+
+  // DEV-0154 (HARDEN): the taxonomy tests above use HAND-WRITTEN strings; if someone reworded a real
+  // actions.ts throw, the classifier could silently revert to 500 while these stayed green. Pin the
+  // ACTUAL throw literals from src/actions.ts to their intended status so a message edit that breaks
+  // the mapping fails CI. Read the source (no browser needed) and assert the concrete phrases.
+  it("real actions.ts throw messages still classify as intended (regression guard)", () => {
+    const src = readFileSync(join(process.cwd(), "src", "actions.ts"), "utf8");
+    // [substring that must appear in a throw, expected status, why]
+    const cases: Array<[string, number]> = [
+      ["Browser connection failed", 502],  // crash disconnect
+      ["Session not found", 404],
+      ["Blocked protocol: only http/https allowed", 400],
+      ["Page limit reached", 429],
+      ["out of range", 400],
+      ["Cannot close the last remaining page", 409],
+      ["not found", 404],                  // "Context <id> not found" / "Element not found"
+      ["timed out after", 504],            // "Script execution timed out after <n>ms"
+    ];
+    for (const [phrase, status] of cases) {
+      expect(src.includes(phrase), `actions.ts no longer throws a message containing "${phrase}"`).toBe(true);
+      // Build a representative real message per phrase: "Blocked ..." is ^-anchored in the classifier
+      // and "timed out after" needs a trailing "<n>ms" — both must not be prefix-wrapped.
+      const msg = phrase === "timed out after" ? "Script execution timed out after 5000ms"
+        : phrase.startsWith("Blocked") ? phrase
+        : `prefix ${phrase} suffix`;
+      expect(errorToResponse(new Error(msg)).status, phrase).toBe(status);
+    }
   });
 });
