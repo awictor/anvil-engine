@@ -54,4 +54,17 @@ describe("/v1/docs endpoint-count drift guard (DEV-0171)", () => {
     expect(missingFromCatalog, "registered routes absent from /v1/docs catalog").toEqual([]);
     expect(phantomInCatalog, "/v1/docs lists routes that aren't registered").toEqual([]);
   });
+
+  // DEV-0173: the path-set guard passes even if a route's VERB flips (GET->POST on the same path) or
+  // the catalog lists the wrong method. Compare METHOD+PATH tuples both ways to catch a verb mismatch.
+  it("catalog method+path tuple set === registered tuple set (both directions)", () => {
+    const tup = (m: string, p: string) => `${m.toUpperCase()} ${norm(p)}`;
+    const registered = new Set(allRoutes().map((r) => tup(r.method, r.pattern)));
+    const cats = docsBody().categories as Record<string, Array<{ method: string; path: string }>>;
+    const catalog = new Set(Object.values(cats).flat().map((e) => tup(e.method, e.path)));
+    const missing = [...registered].filter((t) => !catalog.has(t));
+    const phantom = [...catalog].filter((t) => !registered.has(t));
+    expect(missing, "registered method+path tuples absent from catalog (verb mismatch?)").toEqual([]);
+    expect(phantom, "catalog method+path tuples not registered (verb mismatch?)").toEqual([]);
+  });
 });
