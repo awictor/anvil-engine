@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { type RateLimiter } from "./rate-limiter.js";
 import { json } from "./http-utils.js";
 import { isCrashError } from "./browser-helper.js";
+import { safeEqual } from "./auth-compare.js";
 
 /**
  * Middleware returns true to continue the chain, false when it has already
@@ -46,7 +47,9 @@ export function authMiddleware(apiKey: string): Middleware {
   return (req, res, url) => {
     if (!apiKey || EXEMPT_PATHS.has(url.pathname)) return true;
     const auth = req.headers.authorization || "";
-    if (auth !== `Bearer ${apiKey}`) {
+    // Constant-time compare of the Bearer token — a plain !== leaks match-length by timing (DEV-0191).
+    const presented = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!safeEqual(presented, apiKey)) {
       json(res, 401, { error: "Unauthorized" });
       return false;
     }

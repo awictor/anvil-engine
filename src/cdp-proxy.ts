@@ -3,6 +3,7 @@ import { type IncomingMessage } from "node:http";
 import { type Server } from "node:http";
 import { type SessionManager } from "./session.js";
 import { createLogger } from "./logger.js";
+import { safeEqual } from "./auth-compare.js";
 
 const logger = createLogger("cdp-proxy");
 
@@ -24,7 +25,8 @@ export function createCdpProxy(server: Server, sessionManager: SessionManager): 
 
     if (apiKey || requireAuth) {
       const token = params.get("token");
-      if (!apiKey || typeof token !== "string" || token.length === 0 || token !== apiKey) {
+      // Constant-time compare — a plain token !== apiKey leaks match-length by timing (DEV-0191).
+      if (!apiKey || !safeEqual(token, apiKey)) {
         clientWs.close(4001, "Unauthorized: invalid or missing ?token= parameter");
         return;
       }
