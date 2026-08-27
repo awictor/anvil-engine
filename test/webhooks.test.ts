@@ -20,6 +20,7 @@ describe("anvil-engine webhook callbacks", () => {
       expect(() => fireWebhook("session.created", "test-id")).not.toThrow();
       expect(() => fireWebhook("session.released", "test-id")).not.toThrow();
       expect(() => fireWebhook("session.timed_out", "test-id")).not.toThrow();
+      expect(() => fireWebhook("session.stuck", "test-id")).not.toThrow(); // DEV-0167
     });
   });
 
@@ -37,6 +38,11 @@ describe("anvil-engine webhook callbacks", () => {
     it("supports session.timed_out event", () => {
       const event: WebhookEvent = "session.timed_out";
       expect(event).toBe("session.timed_out");
+    });
+
+    it("supports session.stuck event (DEV-0167 — distinct from timed_out for a hung-op force-kill)", () => {
+      const event: WebhookEvent = "session.stuck";
+      expect(event).toBe("session.stuck");
     });
   });
 

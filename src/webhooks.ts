@@ -4,7 +4,7 @@ import { counters } from "./metrics.js";
 const WEBHOOK_URL = process.env.ANVIL_WEBHOOK_URL || "";
 const logger = createLogger("webhooks");
 
-export type WebhookEvent = "session.created" | "session.released" | "session.timed_out";
+export type WebhookEvent = "session.created" | "session.released" | "session.timed_out" | "session.stuck";
 
 export function fireWebhook(event: WebhookEvent, sessionId: string): void {
   if (!WEBHOOK_URL) return;
