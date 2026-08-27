@@ -85,3 +85,19 @@ the feature is broken — run `npm run test:e2e` (manual/owner, it's in `manual-
      SSRF taxonomy (NOT Blocked URL/protocol/hostname/IP) → retry the anvil-client fetch.
   Each guards a distinct call site (connect vs page-nav vs http-fetch); merging them would retry the
   wrong things. Tested in `browser-helper.test.ts` / `nav-retry.test.ts` / the anvil-client suites.
+
+## HTTP error taxonomy (`errorToResponse`, `src/middleware.ts`)
+
+- The app-wide catch (`app.ts`) funnels every thrown handler error through `errorToResponse(err)` →
+  `{ status, body }`. This is the CONTRACT callers (relay, DataFaucet) key retry/alerting off, so keep
+  it exhaustive: one status per real failure class, and never let a 5xx swallow a client fault.
+- Mapping, in ternary order (client-4xx first, then upstream 5xx, then generic): bad JSON body → **400**;
+  `Blocked protocol/URL` → **400**; Playwright timeout (`TimeoutError` / `Timeout <n>ms exceeded`) →
+  **504**; browser-crash disconnect (reuses `isCrashError`/`CRASH_PATTERNS`) → **502**; `too large` →
+  **413**; `not found` → **404**; else → **500**. (client caps like `Page limit reached` should be **429**.)
+- WHY it matters: a blanket 500 for an EXPECTED browser event (page timeout, crash, tab-cap) reads as an
+  anvil OUTAGE to a dependent caller and triggers false alerts / aggressive retries. Pin every phrase +
+  a negative (generic stays 500) in `middleware.test.ts` when editing.
+- Metrics split (DEV-0147): `recordRequest` bumps `errorsCount` on every ≥400 but `serverErrorsCount`
+  only on ≥500 — the latter is the true-outage signal the heartbeat/alerting keys off, so a burst of
+  client 4xx (400/404/429) can't fake an outage.
