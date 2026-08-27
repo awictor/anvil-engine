@@ -92,12 +92,19 @@ export function errorToResponse(err: unknown): { status: number; body: { error: 
   // polluting serverErrorsCount). Map both to 400, in the client-4xx group.
   const isBadProxy = /^Unsupported proxy scheme/i.test(message)
     || /is private or internal and not allowed/i.test(message);
+  // A Chrome/CDP launch that never exposed its debug endpoint in the window ("Chrome CDP did not start
+  // on port <p> within <t>ms", launcher.ts:233) is a TRANSIENT launch-capacity failure, not a code bug:
+  // 503 Service Unavailable is the standard retry-later signal (DEV-0182). It is still a 5xx (a real
+  // server-side failure, so it DOES count in serverErrorsCount) but distinct from a 500 code fault, and
+  // a caller can safely retry. Ordered after the client-4xx + timeout/crash branches.
+  const isUnavailable = /Chrome CDP did not start on port .* within/i.test(message);
   const status = isBadJson ? 400
     : isBlocked ? 400
     : isBadInput ? 400
     : isBadProxy ? 400
     : isTimeout ? 504
     : isCrash ? 502
+    : isUnavailable ? 503
     : isLimit ? 429
     : isConflict ? 409
     : message.includes("too large") ? 413

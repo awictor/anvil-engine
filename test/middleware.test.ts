@@ -213,4 +213,19 @@ describe("errorToResponse (DEV-0030 — mapping)", () => {
     expect(src.includes("Unsupported proxy scheme"), "launcher.ts no longer throws 'Unsupported proxy scheme'").toBe(true);
     expect(src.includes("is private or internal and not allowed"), "launcher.ts no longer throws the private-host reject").toBe(true);
   });
+
+  // DEV-0182: a Chrome/CDP launch that never exposed its debug endpoint in the window is a TRANSIENT
+  // launch-capacity failure -> 503 (retry-later), NOT a blanket 500 that reads as a code bug. Still a
+  // 5xx (real server-side failure), just distinct from 500. Pin the REAL launcher.ts throw literal.
+  it("maps a CDP-launch timeout -> 503 (not 500)", () => {
+    expect(errorToResponse(new Error("Chrome CDP did not start on port 9222 within 10000ms")).status).toBe(503);
+    expect(errorToResponse(new Error("Chrome CDP did not start on port 9333 within 10000ms")).body.error).toMatch(/Chrome CDP did not start/);
+    // other classes unaffected — generic 500, crash 502, playwright timeout 504
+    expect(errorToResponse(new Error("boom")).status).toBe(500);
+    expect(errorToResponse(new Error("Target closed")).status).toBe(502);
+    expect(errorToResponse(new Error("Timeout 30000ms exceeded")).status).toBe(504);
+    // regression guard: the ACTUAL launcher.ts throw literal still classifies as intended
+    const src = readFileSync(join(process.cwd(), "src", "launcher.ts"), "utf8");
+    expect(src.includes("Chrome CDP did not start on port"), "launcher.ts no longer throws the CDP-start-timeout").toBe(true);
+  });
 });
